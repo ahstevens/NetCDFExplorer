@@ -1,24 +1,24 @@
 ﻿  main.cpp
-c:\users\drew\documents\github\netcdf\src\main.cpp(102): warning C4477: 'printf' : format string '%6d' requires an argument of type 'int', but variadic argument 3 has type 'std::size_t'
-  c:\users\drew\documents\github\netcdf\src\main.cpp(102): note: consider using '%zd' in the format string
-c:\users\drew\documents\github\netcdf\src\main.cpp(243): warning C4477: 'printf' : format string '%5d' requires an argument of type 'int', but variadic argument 4 has type 'std::size_t'
-  c:\users\drew\documents\github\netcdf\src\main.cpp(243): note: consider using '%zd' in the format string
-c:\users\drew\documents\github\netcdf\src\main.cpp(393): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 3 has type 'std::size_t'
-  c:\users\drew\documents\github\netcdf\src\main.cpp(393): note: consider using '%zd' in the format string
-  netCDF.vcxproj -> C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\build\x64\Debug\netCDF.exe
+c:\users\astevens\documents\github\netcdfexplorer\src\main.cpp(102): warning C4477: 'printf' : format string '%6d' requires an argument of type 'int', but variadic argument 3 has type 'size_t'
+  c:\users\astevens\documents\github\netcdfexplorer\src\main.cpp(102): note: consider using '%zd' in the format string
+c:\users\astevens\documents\github\netcdfexplorer\src\main.cpp(243): warning C4477: 'printf' : format string '%5d' requires an argument of type 'int', but variadic argument 4 has type 'size_t'
+  c:\users\astevens\documents\github\netcdfexplorer\src\main.cpp(243): note: consider using '%zd' in the format string
+c:\users\astevens\documents\github\netcdfexplorer\src\main.cpp(393): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 3 has type 'size_t'
+  c:\users\astevens\documents\github\netcdfexplorer\src\main.cpp(393): note: consider using '%zd' in the format string
+  netCDF.vcxproj -> C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\build\x64\Debug\netCDF.exe
   netCDF.vcxproj -> ..\build\x64\Debug\netCDF.pdb (Partial PDB)
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\hdf.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\hdf5.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\hdf5_cpp.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\hdf5_hl.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\hdf5_hl_cpp.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\hdf5_tools.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\jpeg.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\libcurl.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\mfhdf.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\msvcp120.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\msvcr120.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\netcdf.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\xdr.dll
-  C:\Users\Drew\Documents\GitHub\netCDF\msvc\..\bin\zlib1.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\hdf.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\hdf5.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\hdf5_cpp.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\hdf5_hl.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\hdf5_hl_cpp.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\hdf5_tools.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\jpeg.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\libcurl.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\mfhdf.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\msvcp120.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\msvcr120.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\netcdf.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\xdr.dll
+  C:\Users\astevens\Documents\GitHub\netCDFExplorer\msvc\..\bin\zlib1.dll
          14 file(s) copied.
