@@ -12,7 +12,7 @@
 
 void printSummary(int ncid);
 void printVarList(int ncid);
-void printDims(int ncid);
+void printDims(int ncid, int varID);
 void printAttribs(int ncid, int varID);
 void getNCTypeName(nc_type type, char* buffer);
 void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_t len);
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 			running = false;
 			break;
 		case 1:
-			printDims(ncid);
+			printDims(ncid, NC_GLOBAL);
 			break;
 		case 2:
 			printVarList(ncid);
@@ -75,19 +75,37 @@ void printSummary(int ncid)
 	int nDims, nVars, nAttribs, unlimDim;
 	int status = nc_inq(ncid, &nDims, &nVars, &nAttribs, &unlimDim);
 
-	printf("There are %d dimensions, %d variables, and %d global attributes.\n", nDims, nVars, nAttribs);
+	if(unlimDim == -1)
+		printf("There are %d dimensions (no unlimited dimensions), %d variables, and %d global attributes.\n", nDims, nVars, nAttribs);
+	else
+		printf("There are %d dimensions (1 unlimited dimension = ID %d), %d variables, and %d global attributes.\n", nDims, unlimDim, nVars, nAttribs);
 }
 
-void printDims(int ncid)
+void printDims(int ncid, int varID)
 {
+	int status = NC_NOERR;
 	int nDims;
-	int status = nc_inq_ndims(ncid, &nDims);
-	ERR(status);
+	int dimIDs[NC_MAX_DIMS];
+
+	if (varID == NC_GLOBAL)
+	{
+		status = nc_inq_ndims(ncid, &nDims);
+		ERR(status);
+		printf("\nThe NetCDF file contains %d dimensions:\n", nDims);
+		for (int i = 0; i < nDims; ++i)
+			dimIDs[i] = i;
+	}
+	else
+	{
+		char varName[NC_MAX_NAME + 1];
+		status = nc_inq_var(ncid, varID, varName, NULL, &nDims, dimIDs, NULL);
+		ERR(status);
+		printf("\nVariable \"%s\" (ID %d) contains %d dimensions:\n", varName, varID, nDims);
+	}
 
 	int unlimDimID;
 	status = nc_inq_unlimdim(ncid, &unlimDimID);
-
-	printf("\nnetCDF file contains %d dimensions:\n", nDims);
+	ERR(status);
 
 	printf("%5s%20s%6s\n", "DimID", "Name", "Size");
 
@@ -96,13 +114,13 @@ void printDims(int ncid)
 		char dimName[NC_MAX_NAME + 1];
 		size_t dimLen;
 
-		int status = nc_inq_dim(ncid, i, dimName, &dimLen);
+		int status = nc_inq_dim(ncid, dimIDs[i], dimName, &dimLen);
 		ERR(status);
 
-		printf("%5d%20s%6d", i, dimName, dimLen);
+		printf("%5d%20s%6d", dimIDs[i], dimName, dimLen);
 
 		if (i == unlimDimID)
-			printf(" (unlimited)");
+			printf(" (unlimited dimension)");
 
 		printf("\n");
 	}
@@ -152,35 +170,9 @@ void printVarList(int ncid)
 			continue;
 		}
 
-		int attrCount;
+		printDims(ncid, choice);
 
-		status = nc_inq_varnatts(ncid, choice, &attrCount);
-		ERR(status);
-
-		printf("\n%9s%20s%8s%8s  %-8s\n", "Attribute", "Name", "Type", "Size", "Value");
-
-		for (int i = 0; i < attrCount; ++i)
-		{
-			char attrName[NC_MAX_NAME + 1];
-
-			status = nc_inq_attname(ncid, choice, i, attrName);
-			ERR(status);
-
-			nc_type attrType;
-			size_t attrSize;
-
-			status = nc_inq_att(ncid, choice, attrName, &attrType, &attrSize);
-			ERR(status);
-
-			char attrTypeName[NC_MAX_NAME + 1];
-			getNCTypeName(attrType, attrTypeName);
-
-			printf("%9d%20s%8s%8d  ", i, attrName, attrTypeName, (int)attrSize);
-
-			printAttribValue(ncid, choice, attrName, attrType, attrSize);
-
-			printf("\n");
-		}
+		printAttribs(ncid, choice);
 
 		while (true)
 		{
@@ -214,16 +206,16 @@ void printAttribs(int ncid, int varID)
 
 	if (varID == NC_GLOBAL)
 	{
-		printf("\nnetCDF file contains %d global attributes:\n", nAttribs);
+		printf("\nThe NetCDF file contains %d global attributes:\n", nAttribs);
 	}
 	else
 	{
 		char varName[NC_MAX_NAME + 1];
 		status = nc_inq_varname(ncid, varID, varName);
-		printf("\nVariable %s contains %d attributes:\n", varName, nAttribs);
+		printf("\nVariable \"%s\" (ID %d) contains %d attributes:\n", varName, varID, nAttribs);
 	}
 
-	printf("%8s%20s%8s%5s\n", "AttribID", "Name", "Type", "Size");
+	printf("%8s%20s%8s%5s  %-8s\n", "AttribID", "Name", "Type", "Size", "Value");
 
 	for (int i = 0; i < nAttribs; ++i)
 	{
@@ -240,41 +232,10 @@ void printAttribs(int ncid, int varID)
 		char typeName[NC_MAX_NAME + 1];
 		getNCTypeName(attrType, typeName);
 
-		printf("%8d%20s%8s%5d\n", i, attrName, typeName, attrLen);
-	}
+		printf("%8d%20s%8s%5d  ", i, attrName, typeName, attrLen);
 
-	while (true)
-	{
-		printf("\nEnter attribute ID to print its value or -1 to go back: ");
-
-		int choice = NC_MIN_INT;
-		scanf_s("%d", &choice);
-		while (getchar() != '\n');
-
-		if (choice == -1)
-		{
-			break;
-		}
-		else if (choice < -1 || choice > nAttribs - 1)
-		{
-			printf("ERROR: Invalid selection\n");
-			continue;
-		}
-
-		char attrName[NC_MAX_NAME + 1];
-		nc_type attrType;
-		size_t attrLen;
-
-		nc_inq_attname(ncid, varID, choice, attrName);
-		ERR(status);
-
-		nc_inq_att(ncid, varID, attrName, &attrType, &attrLen);
-		ERR(status);
-
-		printf("\nAttribute ID %d:\n", choice);
-		printf("\tName  = %s\n", attrName);
-		printf("\tValue = ");
 		printAttribValue(ncid, varID, attrName, attrType, attrLen);
+
 		printf("\n");
 	}
 }
