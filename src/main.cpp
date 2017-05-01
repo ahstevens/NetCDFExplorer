@@ -117,7 +117,7 @@ void printDims(int ncid, int varID)
 		int status = nc_inq_dim(ncid, dimIDs[i], dimName, &dimLen);
 		ERR(status);
 
-		printf("%5d%20s%6d", dimIDs[i], dimName, dimLen);
+		printf("%5d%20s%6zd", dimIDs[i], dimName, dimLen);
 
 		if (i == unlimDimID)
 			printf(" (unlimited dimension)");
@@ -232,7 +232,7 @@ void printAttribs(int ncid, int varID)
 		char typeName[NC_MAX_NAME + 1];
 		getNCTypeName(attrType, typeName);
 
-		printf("%8d%20s%8s%5d  ", i, attrName, typeName, attrLen);
+		printf("%8d%20s%8s%5zd  ", i, attrName, typeName, attrLen);
 
 		printAttribValue(ncid, varID, attrName, attrType, attrLen);
 
@@ -336,21 +336,9 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 
 void printVarData(int ncid, int varID)
 {
-	char varName[NC_MAX_NAME + 1];
 	nc_type varType;
-	int nDims;
-	int dimIDs[MAX_VAR_DIMS];
-	int status = nc_inq_var(ncid, varID, varName, &varType, &nDims, dimIDs, NULL);
+	int status = nc_inq_vartype(ncid, varID, &varType);
 	ERR(status);
-
-	size_t dimLens[MAX_VAR_DIMS];
-	char dimNames[MAX_VAR_DIMS][NC_MAX_NAME + 1];
-
-	for (int i = 0; i < nDims; ++i)
-	{
-		status = nc_inq_dim(ncid, dimIDs[i], dimNames[i], &dimLens[i]);
-		ERR(status);
-
-		printf("Dimension ID %d: %s (%d)\n", dimIDs[i], dimNames[i], dimLens[i]);
-	}
+	
+	printf("Not yet implemented...\n");
 }
