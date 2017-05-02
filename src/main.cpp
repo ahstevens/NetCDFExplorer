@@ -177,7 +177,7 @@ void printVarList(int ncid)
 
 	if (nVars == 0) return;
 
-	printf("%5s%20s%8s%12s%12s\n", "VarID", "Name", "Type", "Dimensions", "Attributes");
+	printf("%5s%20s%8s%12s%12s%13s\n", "VarID", "Name", "Type", "Dimensions", "Attributes", "Description");
 
 	for (int i = 0; i < nVars; ++i)
 	{
@@ -192,7 +192,24 @@ void printVarList(int ncid)
 		char typeName[NC_MAX_NAME + 1];
 		getNCTypeName(varType, typeName);
 
-		printf("%5d%20s%8s%12d%12d\n", i, varName, typeName, nDims, nAttribs);
+		size_t descLen;
+		char* desc;
+		if(nc_inq_attlen(ncid, i, "long_name", &descLen) != NC_ENOTATT)
+		{
+			desc = (char*)malloc(sizeof(char) * (descLen + 1));
+			status = nc_get_att_text(ncid, i, "long_name", desc);
+			ERR(status);
+			desc[descLen] = '\0';
+		}
+		else
+		{
+			desc = (char*)malloc(sizeof(char) * 5);
+			strcpy(desc, "none");
+		}
+
+		printf("%5d%20s%8s%12d%12d  %s\n", i, varName, typeName, nDims, nAttribs, desc);
+
+		free(desc);
 	}
 
 	while (true)
