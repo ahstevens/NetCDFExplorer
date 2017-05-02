@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 	int status = NC_NOERR;
 	int ncid;
 
-	char* fName = argc > 1 ? argv[1] : TEST_FILE_NAME;
+	const char* fName = argc > 1 ? argv[1] : TEST_FILE_NAME;
 
 	status = nc_open(fName, NC_NOWRITE, &ncid);
 	ERR(status);
@@ -75,6 +75,7 @@ void printSummary(int ncid)
 {
 	int nDims, nVars, nAttribs, unlimDim;
 	int status = nc_inq(ncid, &nDims, &nVars, &nAttribs, &unlimDim);
+	ERR(status);
 
 	if(unlimDim == -1)
 		printf("There are %d dimensions (no unlimited dimensions), %d variables, and %d global attributes.\n", nDims, nVars, nAttribs);
