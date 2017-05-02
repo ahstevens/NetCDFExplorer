@@ -36,16 +36,15 @@ int main(int argc, char* argv[])
 
 	printf("Opened netCDF file %s\n", fName);
 
-	printSummary(ncid);
-
 	bool running = true;
 	while (running)
 	{
 		printf("\nMain Options:\n");
 		printf("\t0: Exit\n");
-		printf("\t1: Dimensions\n");
-		printf("\t2: Variables\n");
-		printf("\t3: Global Attributes\n");
+		printf("\t1: File Summary\n");
+		printf("\t2: Dimensions\n");
+		printf("\t3: Variables\n");
+		printf("\t4: Global Attributes\n");
 
 		printf("\nEnter choice: ");
 
@@ -59,12 +58,15 @@ int main(int argc, char* argv[])
 			running = false;
 			break;
 		case 1:
-			printDims(ncid, NC_GLOBAL);
+			printSummary(ncid);
 			break;
 		case 2:
-			printVarList(ncid);
+			printDims(ncid, NC_GLOBAL);
 			break;
 		case 3:
+			printVarList(ncid);
+			break;
+		case 4:
 			printAttribs(ncid, NC_GLOBAL);
 			break;
 		default:
@@ -73,12 +75,15 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	status = nc_close(ncid);
+	ERR(status);
+
 	return EXIT_SUCCESS;
 }
 
 void printUsage(char* argv[])
 {
-	printf("Usage:\n\t%s <NetCDF File>", argv[0]);
+	printf("\nUsage:\n\t%s <NetCDF File>\n", argv[0]);
 }
 
 void printSummary(int ncid)
@@ -87,10 +92,32 @@ void printSummary(int ncid)
 	int status = nc_inq(ncid, &nDims, &nVars, &nAttribs, &unlimDim);
 	ERR(status);
 
-	if(unlimDim == -1)
-		printf("There are %d dimensions (no unlimited dimensions), %d variables, and %d global attributes.\n", nDims, nVars, nAttribs);
+	size_t titleLen;
+
+	status = nc_inq_attlen(ncid, NC_GLOBAL, "title", &titleLen);
+
+	char* title = (char*) malloc(sizeof(char) * (titleLen + 1));
+	
+	status = nc_get_att_text(ncid, NC_GLOBAL, "title", title);
+
+	title[titleLen] = '\0'; // must manually null-terminate the string
+
+	printf("\nModel Title: \"%s\"\n", title);
+
+	free(title);
+
+	if (unlimDim == -1)
+	{
+		printf("\t%d dimensions (no unlimited dimensions)\n", nDims);
+	}
 	else
-		printf("There are %d dimensions (1 unlimited dimension = ID %d), %d variables, and %d global attributes.\n", nDims, unlimDim, nVars, nAttribs);
+	{
+		char unlimDimName[NC_MAX_NAME];
+		status = nc_inq_dimname(ncid, unlimDim, unlimDimName);
+		printf("\t%d dimensions (1 unlimited dimension \"%s\" at index %d)\n", nDims, unlimDimName, unlimDim);
+	}
+
+	printf("\t%d variables\n\t%d global attributes\n", nVars, nAttribs);
 }
 
 void printDims(int ncid, int varID)
