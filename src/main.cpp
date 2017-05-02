@@ -1,10 +1,8 @@
 #include "netcdf.h"
 
 #include <stdlib.h>
-#include <stddef.h>
 #include <stdio.h>
-
-#include <iostream>
+#include <string.h>
 
 #define ERR_CODE 2
 #define ERR(e) { if (e != NC_NOERR) { printf("Error: %s\n", nc_strerror(e)); exit(ERR_CODE); } }
@@ -199,6 +197,8 @@ void printVarList(int ncid, int dimFilter)
 
 	printf("%5s%20s%8s%12s%12s%13s\n", "VarID", "Name", "Type", "Dimensions", "Attributes", "Description");
 
+	bool* indexFilter = (bool*)malloc(sizeof(bool) * nVars);
+
 	for (int i = 0; i < nVars; ++i)
 	{
 		char varName[NC_MAX_NAME + 1];
@@ -209,7 +209,15 @@ void printVarList(int ncid, int dimFilter)
 		nc_inq_var(ncid, i, varName, &varType, &nDims, dims, &nAttribs);
 		ERR(status);
 
-		if (dimFilter != -1 && nDims != dimFilter) continue;
+		if (dimFilter != -1 && nDims != dimFilter)
+		{
+			indexFilter[i] = false;
+			continue;
+		}
+		else
+		{
+			indexFilter[i] = true;
+		}
 
 		char typeName[NC_MAX_NAME + 1];
 		getNCTypeName(varType, typeName);
@@ -246,7 +254,7 @@ void printVarList(int ncid, int dimFilter)
 		{
 			break;
 		}
-		else if (choice < -1 || choice > nVars - 1)
+		else if (choice < -1 || choice > nVars - 1 || !indexFilter[choice])
 		{
 			printf("ERROR: Invalid selection\n");
 			continue;
@@ -277,6 +285,8 @@ void printVarList(int ncid, int dimFilter)
 			printf("ERROR: Invalid selection\n");
 		}
 	}
+
+	free(indexFilter);
 }
 
 void printAttribs(int ncid, int varID)
