@@ -42,9 +42,9 @@ int main(int argc, char* argv[])
 		printf("\nMain Options:\n");
 		printf("\t0: Exit\n");
 		printf("\t1: File Summary\n");
-		printf("\t2: Dimensions\n");
-		printf("\t3: Variables\n");
-		printf("\t4: Global Attributes\n");
+		printf("\t2: Global Attributes\n");
+		printf("\t3: Dimensions\n");
+		printf("\t4: Variables\n");
 
 		printf("\nEnter choice: ");
 
@@ -61,13 +61,13 @@ int main(int argc, char* argv[])
 			printSummary(ncid);
 			break;
 		case 2:
-			printDims(ncid, NC_GLOBAL);
+			printAttribs(ncid, NC_GLOBAL);
 			break;
 		case 3:
-			printVarList(ncid);
+			printDims(ncid, NC_GLOBAL);
 			break;
 		case 4:
-			printAttribs(ncid, NC_GLOBAL);
+			printVarList(ncid);
 			break;
 		default:
 			printf("ERROR: Invalid choice\n");
