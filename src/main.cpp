@@ -6,11 +6,10 @@
 
 #include <iostream>
 
-#define TEST_FILE_NAME "../test/run03v6_12hrloop.nc"
-
 #define ERR_CODE 2
 #define ERR(e) { if (e != NC_NOERR) { printf("Error: %s\n", nc_strerror(e)); exit(ERR_CODE); } }
 
+void printUsage(char* argv[]);
 void printSummary(int ncid);
 void printVarList(int ncid);
 void printDims(int ncid, int varID);
@@ -19,12 +18,18 @@ void getNCTypeName(nc_type type, char* buffer);
 void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_t len);
 void printVarData(int ncid, int varID);
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	int status = NC_NOERR;
 	int ncid;
 
-	const char* fName = argc > 1 ? argv[1] : TEST_FILE_NAME;
+	if (argc < 2)
+	{
+		printUsage(argv);
+		exit(EXIT_FAILURE);
+	}
+
+	const char* fName = argv[1];
 
 	status = nc_open(fName, NC_NOWRITE, &ncid);
 	ERR(status);
@@ -69,6 +74,11 @@ int main(int argc, char *argv[])
 	}
 
 	return EXIT_SUCCESS;
+}
+
+void printUsage(char* argv[])
+{
+	printf("Usage:\n\t%s <NetCDF File>", argv[0]);
 }
 
 void printSummary(int ncid)
