@@ -1,6 +1,7 @@
 #include "netcdf.h"
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #include <iostream>
@@ -44,7 +45,7 @@ int main(int argc, char *argv[])
 		printf("\nEnter choice: ");
 
 		int choice = NC_MIN_INT;
-		scanf_s("%d", &choice);
+		scanf("%d", &choice);
 		while (getchar() != '\n');
 
 		switch (choice)
@@ -157,7 +158,7 @@ void printVarList(int ncid)
 		printf("\nEnter a variable ID for detailed information or -1 to go back: ");
 		
 		int choice = NC_MIN_INT;
-		scanf_s("%d", &choice);
+		scanf("%d", &choice);
 		while (getchar() != '\n');
 
 		if (choice == -1)
@@ -179,7 +180,7 @@ void printVarList(int ncid)
 			printf("\nEnter 0 to dump variable data or -1 to go back: ");
 
 			int dumpData = NC_MIN_INT;
-			scanf_s("%d", &dumpData);
+			scanf("%d", &dumpData);
 			while (getchar() != '\n');
 
 			if (dumpData == 0)
@@ -245,43 +246,43 @@ void getNCTypeName(nc_type type, char* buffer)
 	switch (type)
 	{
 	case NC_BYTE:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "BYTE");
+		strcpy(buffer, "BYTE");
 		break;
 	case NC_UBYTE:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "UBYTE");
+		strcpy(buffer, "UBYTE");
 		break;
 	case NC_CHAR:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "CHAR");
+		strcpy(buffer, "CHAR");
 		break;
 	case NC_SHORT:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "SHORT");
+		strcpy(buffer, "SHORT");
 		break;
 	case NC_USHORT:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "USHORT");
+		strcpy(buffer, "USHORT");
 		break;
 	case NC_INT:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "INT");
+		strcpy(buffer, "INT");
 		break;
 	case NC_UINT:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "UINT");
+		strcpy(buffer, "UINT");
 		break;
 	case NC_INT64:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "INT64");
+		strcpy(buffer, "INT64");
 		break;
 	case NC_UINT64:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "UINT64");
+		strcpy(buffer, "UINT64");
 		break;
 	case NC_FLOAT:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "FLOAT");
+		strcpy(buffer, "FLOAT");
 		break;
 	case NC_DOUBLE:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "DOUBLE");
+		strcpy(buffer, "DOUBLE");
 		break;
 	case NC_STRING:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "STRING");
+		strcpy(buffer, "STRING");
 		break;
 	default:
-		strcpy_s(buffer, NC_MAX_NAME + 1, "NONE");
+		strcpy(buffer, "NONE");
 		break;
 	}
 }
