@@ -142,6 +142,8 @@ void printDims(int ncid, int varID)
 		printf("\nVariable \"%s\" (ID %d) contains %d dimensions:\n", varName, varID, nDims);
 	}
 
+	if (nDims == 0) return;
+
 	int unlimDimID;
 	status = nc_inq_unlimdim(ncid, &unlimDimID);
 	ERR(status);
@@ -172,6 +174,8 @@ void printVarList(int ncid)
 	ERR(status);
 
 	printf("\nnetCDF file contains %d variables:\n", nVars);
+
+	if (nVars == 0) return;
 
 	printf("%5s%20s%8s%12s%12s\n", "VarID", "Name", "Type", "Dimensions", "Attributes");
 
@@ -253,6 +257,8 @@ void printAttribs(int ncid, int varID)
 		status = nc_inq_varname(ncid, varID, varName);
 		printf("\nVariable \"%s\" (ID %d) contains %d attributes:\n", varName, varID, nAttribs);
 	}
+
+	if (nAttribs == 0) return;
 
 	printf("%8s%20s%8s%5s  %-8s\n", "AttribID", "Name", "Type", "Size", "Value");
 
