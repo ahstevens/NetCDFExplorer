@@ -23,8 +23,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C9C8E139-E138-457B-89CC-8974D1A80E26}</ProjectGuid>
-    <RootNamespace>netCDF</RootNamespace>
+    <RootNamespace>netCDFExplorer</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <ProjectName>netCDFExplorer</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

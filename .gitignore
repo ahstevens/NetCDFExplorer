@@ -56,7 +56,7 @@ Temporary Items
 
 # User-specific files
 *.suo
-*.user
+#*.user
 *.userosscache
 *.sln.docstates
 
