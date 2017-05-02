@@ -11,7 +11,7 @@
 
 void printUsage(char* argv[]);
 void printSummary(int ncid);
-void printVarList(int ncid);
+void printVarList(int ncid, int dimFilter = -1);
 void printDims(int ncid, int varID);
 void printAttribs(int ncid, int varID);
 void getNCTypeName(nc_type type, char* buffer);
@@ -44,7 +44,12 @@ int main(int argc, char* argv[])
 		printf("\t1: File Summary\n");
 		printf("\t2: Global Attributes\n");
 		printf("\t3: Dimensions\n");
-		printf("\t4: Variables\n");
+		printf("\t4: All Variables\n");
+		printf("\t5: Single-value Variables\n");
+		printf("\t6: 1D Variables\n");
+		printf("\t7: 2D Variables\n");
+		printf("\t8: 3D Variables\n");
+		printf("\t9: 4D Variables\n");
 
 		printf("\nEnter choice: ");
 
@@ -67,7 +72,22 @@ int main(int argc, char* argv[])
 			printDims(ncid, NC_GLOBAL);
 			break;
 		case 4:
-			printVarList(ncid);
+			printVarList(ncid, -1);
+			break;
+		case 5:
+			printVarList(ncid, 0);
+			break;
+		case 6:
+			printVarList(ncid, 1);
+			break;
+		case 7:
+			printVarList(ncid, 2);
+			break;
+		case 8:
+			printVarList(ncid, 3);
+			break;
+		case 9:
+			printVarList(ncid, 4);
 			break;
 		default:
 			printf("ERROR: Invalid choice\n");
@@ -167,7 +187,7 @@ void printDims(int ncid, int varID)
 	}
 }
 
-void printVarList(int ncid)
+void printVarList(int ncid, int dimFilter)
 {
 	int nVars;
 	int status = nc_inq_nvars(ncid, &nVars);
@@ -188,6 +208,8 @@ void printVarList(int ncid)
 
 		nc_inq_var(ncid, i, varName, &varType, &nDims, dims, &nAttribs);
 		ERR(status);
+
+		if (dimFilter != -1 && nDims != dimFilter) continue;
 
 		char typeName[NC_MAX_NAME + 1];
 		getNCTypeName(varType, typeName);
