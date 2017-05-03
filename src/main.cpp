@@ -106,8 +106,8 @@ void printUsage(char* argv[])
 
 void printSummary(int ncid)
 {
-	int nDims, nVars, nAttribs, unlimDim;
-	int status = nc_inq(ncid, &nDims, &nVars, &nAttribs, &unlimDim);
+	int nDims, nVars, nAttribs;
+	int status = nc_inq(ncid, &nDims, &nVars, &nAttribs, NULL);
 	ERR(status);
 
 	size_t titleLen;
@@ -124,18 +124,12 @@ void printSummary(int ncid)
 
 	free(title);
 
-	if (unlimDim == -1)
-	{
-		printf("\t%d dimensions (no unlimited dimensions)\n", nDims);
-	}
-	else
-	{
-		char unlimDimName[NC_MAX_NAME];
-		status = nc_inq_dimname(ncid, unlimDim, unlimDimName);
-		printf("\t%d dimensions (1 unlimited dimension \"%s\" at index %d)\n", nDims, unlimDimName, unlimDim);
-	}
+	int nUnlimDims, unlimDimIDs[NC_MAX_DIMS];
+	status = nc_inq_unlimdims(ncid, &nUnlimDims, unlimDimIDs);
 
-	printf("\t%d variables\n\t%d global attributes\n", nVars, nAttribs);
+	printf("\t%d dimensions (%d unlimited)\n", nDims, nUnlimDims);
+	printf("\t%d variables\n", nVars);
+	printf("\t%d global attributes\n", nAttribs);
 }
 
 void printDims(int ncid, int varID)
@@ -162,8 +156,8 @@ void printDims(int ncid, int varID)
 
 	if (nDims == 0) return;
 
-	int unlimDimID;
-	status = nc_inq_unlimdim(ncid, &unlimDimID);
+	int nUnlimDims, unlimDimIDs[NC_MAX_DIMS];
+	status = nc_inq_unlimdims(ncid, &nUnlimDims, unlimDimIDs);
 	ERR(status);
 
 	printf("%5s%20s%6s\n", "DimID", "Name", "Size");
@@ -178,8 +172,11 @@ void printDims(int ncid, int varID)
 
 		printf("%5d%20s%6zd", dimIDs[i], dimName, dimLen);
 
-		if (dimIDs[i] == unlimDimID)
-			printf(" (unlimited dimension)");
+		for (int j = 0; j < nUnlimDims; ++j)
+		{
+			if (dimIDs[i] == unlimDimIDs[j])
+				printf(" (unlimited dimension)");
+		}
 
 		printf("\n");
 	}
@@ -430,9 +427,55 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 
 void printVarData(int ncid, int varID)
 {
+	char varName[NC_MAX_NAME];
 	nc_type varType;
-	int status = nc_inq_vartype(ncid, varID, &varType);
+	int nDims, dimIDs[NC_MAX_VAR_DIMS], nAtts;
+	int status = nc_inq_var(ncid, varID, varName, &varType, &nDims, dimIDs, &nAtts);
 	ERR(status);
+
+	int flattenedDimSize = 1;
+
+	for (int i = 0; i < nDims; ++i)
+	{
+		size_t dimLen;
+		nc_inq_dimlen(ncid, dimIDs[i], &dimLen);
+		flattenedDimSize *= (int)dimLen;
+	}
+
+	printf("Dumping %d values from %d dimensions:\n\n", flattenedDimSize, nDims);
+
+	switch (varType)
+	{
+	case NC_FLOAT:
+	{
+		float* val = (float*)malloc(flattenedDimSize * sizeof(float));
+		status = nc_get_var_float(ncid, varID, val);
+		ERR(status);
+		for (int i = 0; i < flattenedDimSize; ++i)
+			printf("%f ", val[i]);
+		break;
+	}
+	case NC_DOUBLE:
+	{
+		double* val = (double*)malloc(flattenedDimSize * sizeof(double));
+		status = nc_get_var_double(ncid, varID, val);
+		ERR(status);
+		for (int i = 0; i < flattenedDimSize; ++i)
+			printf("%f ", val[i]);
+		break;
+	}
+	case NC_INT:
+	{
+		int* val = (int*)malloc(flattenedDimSize * sizeof(int));
+		status = nc_get_var_int(ncid, varID, val);
+		ERR(status);
+		for (int i = 0; i < flattenedDimSize; ++i)
+			printf("%d ", val[i]);
+		break;
+	}
+	default:
+		break;
+	}
 	
-	printf("Not yet implemented...\n");
+	printf("\n\nDone!\n");
 }
