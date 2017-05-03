@@ -178,7 +178,7 @@ void printDims(int ncid, int varID)
 
 		printf("%5d%20s%6zd", dimIDs[i], dimName, dimLen);
 
-		if (i == unlimDimID)
+		if (dimIDs[i] == unlimDimID)
 			printf(" (unlimited dimension)");
 
 		printf("\n");
