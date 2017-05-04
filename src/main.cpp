@@ -17,6 +17,8 @@ void getNCTypeName(nc_type type, char* buffer);
 void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_t len);
 void printVarData(int ncid, int varID);
 
+void buildArakawaCGrid(int ncid);
+
 int main(int argc, char* argv[])
 {
 	int status = NC_NOERR;
@@ -479,4 +481,9 @@ void printVarData(int ncid, int varID)
 	}
 	
 	printf("\n\nDone!\n");
+}
+
+void buildArakawaCGrid(int ncid)
+{
+
 }
