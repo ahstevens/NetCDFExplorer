@@ -3,13 +3,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define ERR_CODE 2
 #define ERR(e) { if (e != NC_NOERR) { printf("Error: %s\n", nc_strerror(e)); exit(ERR_CODE); } }
 
 void printUsage(char* argv[]);
 void printSummary(int ncid);
-void printVarList(int ncid, int dimFilter = -1);
+void printVarList(int ncid, int dimFilter);
 void printDims(int ncid, int varID);
 void printAttribs(int ncid, int varID);
 void getNCTypeName(nc_type type, char* buffer);
