@@ -90,6 +90,9 @@ int main(int argc, char* argv[])
 		case 9:
 			printVarList(ncid, 4);
 			break;
+		case 10:
+			buildArakawaCGrid(ncid);
+			break;
 		default:
 			printf("ERROR: Invalid choice\n");
 			break;
@@ -485,5 +488,64 @@ void printVarData(int ncid, int varID)
 
 void buildArakawaCGrid(int ncid)
 {
+	//	  psi(i,j+1)----v(i,j+1)----psi(i+1,j+1)
+	//		   |						 |
+	//		   |						 |
+	//		   |						 |
+	//		u(i,j)      rho(i,j)	  u(i+1,j)
+	//		   |						 |
+	//         |						 |
+	//		   |						 |
+	//	   psi(i,j)------v(i,j)------psi(i+1,j)
+	
+	struct NCVar {
+		int id;
+		char name[NC_MAX_NAME];
+		int ndims;
+		int dimids[NC_MAX_DIMS];
+		size_t dimlens[NC_MAX_DIMS];
+		void* data;
+	};
 
+
+	char* name_lat_u = "lat_u"; 
+	char* name_mask_u = "mask_u";
+	char* name_lat_v = "lat_v";
+	char* name_lon_v = "lon_v";
+	char* name_mask_v = "mask_v";
+	char* name_lat_psi = "lat_psi";
+	char* name_lon_psi = "lon_psi";
+	char* name_mask_psi = "mask_psi";
+	char* name_lat_rho = "lat_rho";
+	char* name_lon_rho = "lon_rho";
+	char* name_mask_rho = "mask_rho";
+
+	char* name_h_rho = "h";
+	char* name_s_rho = "s_rho";
+	char* name_s_w = "s_w";
+
+	NCVar lon_u;
+	strcpy(lon_u.name, "lon_u");
+	nc_inq_varid(ncid, lon_u.name, &lon_u.id);
+	nc_inq_varndims(ncid, lon_u.id, &lon_u.ndims);
+	//lon_u.dimids = (int*)malloc(lon_u.ndims * sizeof(int));
+	//lon_u.dimlens = (size_t*)malloc(lon_u.ndims * sizeof(size_t));
+	nc_inq_vardimid(ncid, lon_u.id, lon_u.dimids);
+	size_t data_size = 1;
+	for (int i = 0; i < lon_u.ndims; ++i)
+	{
+		nc_inq_dimlen(ncid, lon_u.dimids[i], &lon_u.dimlens[i]);
+		data_size *= lon_u.dimlens[i];
+	}
+
+	lon_u.data = (float*)malloc(data_size * sizeof(float));
+	nc_get_var_float(ncid, lon_u.id, (float*)lon_u.data);
+
+	float min_val, max_val;
+	min_val = max_val = 0.f;
+	for (size_t i = 0u; i < data_size; ++i)
+	{
+		if (lon_u.data[i] < min_val)
+			min_val = lon_u.data[i];
+	}
 }
