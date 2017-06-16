@@ -504,7 +504,7 @@ void buildArakawaCGrid(int ncid)
 		int ndims;
 		int dimids[NC_MAX_DIMS];
 		size_t dimlens[NC_MAX_DIMS];
-		void* data;
+		float* data;
 	};
 
 
@@ -542,10 +542,15 @@ void buildArakawaCGrid(int ncid)
 	nc_get_var_float(ncid, lon_u.id, (float*)lon_u.data);
 
 	float min_val, max_val;
-	min_val = max_val = 0.f;
+	min_val = max_val = lon_u.data[0];
 	for (size_t i = 0u; i < data_size; ++i)
 	{
 		if (lon_u.data[i] < min_val)
 			min_val = lon_u.data[i];
+
+		if (lon_u.data[i] > max_val)
+			max_val = lon_u.data[i];
 	}
+
+	printf("\nMin: %f\nMax: %f\n", min_val, max_val);
 }
