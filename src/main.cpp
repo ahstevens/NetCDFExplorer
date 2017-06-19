@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "ArakawaCGrid.h"
+
 #define ERR_CODE 2
 #define ERR(e) { if (e != NC_NOERR) { printf("Error: %s\n", nc_strerror(e)); exit(ERR_CODE); } }
 
