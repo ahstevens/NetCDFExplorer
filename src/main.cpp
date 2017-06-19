@@ -17,6 +17,119 @@ void getNCTypeName(nc_type type, char* buffer);
 void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_t len);
 void printVarData(int ncid, int varID);
 
+struct NCVar {
+	int id;
+	char name[NC_MAX_NAME];
+	int ndims;
+	int* dimids;
+	size_t* dimlens;
+	size_t len;
+	float* data;
+	float min;
+	float max;
+	bool uses_fill;
+	float fill; // fill value, i.e., N/A or NULL
+
+	float* get(int dim1index = -1, int dim2index = -1, int dim3index = -1, int dim4index = -1)
+	{
+		//if (dim1index > -1 && ndims < 1 ||
+		//	dim2index > -1 && ndims < 2 ||
+		//	dim3index > -1 && ndims < 3 ||
+		//	dim4index > -1 && ndims < 4)
+		//{
+		//	printf("Bad index in %s.get()", name);
+		//	return NULL;
+		//}
+		
+		switch (ndims)
+		{
+		case 0:
+			return data;
+			break;
+		case 1:
+			if (dim1index < 0 || dim1index >= (int)dimlens[0])
+			{
+				printf("Bad index in dimension 1 of %s.get(): %d\n", name, dim1index);
+				return NULL;
+			}
+			if (dim2index != -1 || dim3index != -1 || dim4index != -1)
+			{
+				printf("There are only %d dimensions in %s!\n", ndims, name);
+				return NULL;
+			}
+			return &data[dim1index];
+			break;
+		case 2:
+			if (dim1index < 0 || dim1index >= (int)dimlens[0])
+			{
+				printf("Bad index in dimension 1 (length = %d) of %s.get(): %d\n", dimlens[0], name, dim1index);
+				return NULL;
+			}
+			if (dim2index < 0 || dim2index >= (int)dimlens[1])
+			{
+				printf("Bad index in dimension 2 (length = %d) of %s.get(): %d\n", dimlens[1], name, dim2index);
+				return NULL;
+			}
+			if (dim3index != -1 || dim4index != -1)
+			{
+				printf("There are only %d dimensions in %s!\n", ndims, name);
+				return NULL;
+			}
+			return &data[dim2index + dim1index * dimlens[1]];
+			break;
+		case 3:
+			if (dim1index < 0 || dim1index >= (int)dimlens[0])
+			{
+				printf("Bad index in dimension 1 (length = %d) of %s.get(): %d\n", dimlens[0], name, dim1index);
+				return NULL;
+			}
+			if (dim2index < 0 || dim2index >= (int)dimlens[1])
+			{
+				printf("Bad index in dimension 2 (length = %d) of %s.get(): %d\n", dimlens[1], name, dim2index);
+				return NULL;
+			}
+			if (dim3index < 0 || dim3index >= (int)dimlens[2])
+			{
+				printf("Bad index in dimension 3 (length = %d) of %s.get(): %d\n", dimlens[2], name, dim3index);
+				return NULL;
+			}
+			if (dim4index != -1)
+			{
+				printf("There are only %d dimensions in %s!\n", ndims, name);
+				return NULL;
+			}
+			return &data[dim3index + dim2index * dimlens[2] + dim1index * dimlens[2] * dimlens[1]];
+			break;
+		case 4:
+			if (dim1index < 0 || dim1index >= (int)dimlens[0])
+			{
+				printf("Bad index in dimension 1 (length = %d) of %s.get(): %d\n", dimlens[0], name, dim1index);
+				return NULL;
+			}
+			if (dim2index < 0 || dim2index >= (int)dimlens[1])
+			{
+				printf("Bad index in dimension 2 (length = %d) of %s.get(): %d\n", dimlens[1], name, dim2index);
+				return NULL;
+			}
+			if (dim3index < 0 || dim3index >= (int)dimlens[2])
+			{
+				printf("Bad index in dimension 3 (length = %d) of %s.get(): %d\n", dimlens[2], name, dim3index);
+				return NULL;
+			}
+			if (dim4index < 0 || dim4index >= (int)dimlens[3])
+			{
+				printf("Bad index in dimension 4 (length = %d) of %s.get(): %d\n", dimlens[3], name, dim4index);
+				return NULL;
+			}
+			return &data[dim4index + dim3index * dimlens[3] + dim2index * dimlens[3] * dimlens[2] + dim1index * dimlens[3] * dimlens[2] * dimlens[1]];
+			break;
+		}
+
+	}
+};
+
+NCVar getVar(int ncid, const char* var_name);
+void freeVar(NCVar* var);
 void buildArakawaCGrid(int ncid);
 
 int main(int argc, char* argv[])
@@ -406,6 +519,7 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 		ERR(status);
 		for (int i = 0; i < len; ++i)
 			printf("%f ", val[i]);
+		free(val);
 		break;
 	}
 	case NC_DOUBLE:
@@ -415,6 +529,7 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 		ERR(status);
 		for (int i = 0; i < len; ++i)
 			printf("%f ", val[i]);
+		free(val);
 		break;
 	}
 	case NC_INT:
@@ -424,6 +539,7 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 		ERR(status);
 		for (int i = 0; i < len; ++i)
 			printf("%d ", val[i]);
+		free(val);
 		break;
 	}
 	default:
@@ -486,6 +602,61 @@ void printVarData(int ncid, int varID)
 	printf("\n\nDone!\n");
 }
 
+NCVar getVar(int ncid, const char* var_name)
+{
+	NCVar var;
+	strcpy(var.name, var_name);
+	nc_inq_varid(ncid, var.name, &var.id);
+	nc_inq_varndims(ncid, var.id, &var.ndims);
+	var.dimids = (int*)malloc(var.ndims * sizeof(int));
+	var.dimlens = (size_t*)malloc(var.ndims * sizeof(size_t));
+	nc_inq_vardimid(ncid, var.id, var.dimids);
+	var.len = 1;
+	for (int i = 0; i < var.ndims; ++i)
+	{
+		nc_inq_dimlen(ncid, var.dimids[i], &var.dimlens[i]);
+		var.len *= var.dimlens[i];
+	}
+
+	// allocate and get the data
+	var.data = (float*)malloc(var.len * sizeof(float));
+	nc_get_var_float(ncid, var.id, (float*)var.data);
+	
+	// check if data uses a fill value to designate NULL or N/A values
+	int usesFillVal = nc_get_att(ncid, var.id, "_FillValue", &(var.fill));
+	if (usesFillVal == NC_NOERR)
+	{
+		var.uses_fill = true;
+		var.min = var.max = var.fill;
+	}
+	else
+	{
+		var.uses_fill = false;
+		var.min = var.max = var.data[0];
+	}
+
+	for (size_t i = 0u; i < var.len; ++i)
+	{
+		if (var.data[i] < var.min && (!var.uses_fill || (var.uses_fill && var.fill != var.data[i])))
+			var.min = var.data[i];
+
+		if ((var.data[i] > var.max && !var.uses_fill) || 
+			(var.uses_fill && ((var.data[i] > var.max && var.max != var.fill && var.data[i] != var.fill) || (var.max == var.fill && var.data[i] != var.fill))))
+			var.max = var.data[i];
+	}
+
+	printf("\n%s\n\tMin: %f\n\tMax: %f\n", var.name, var.min, var.max);
+
+	return var;
+}
+
+void freeVar(NCVar* var)
+{
+	free(var->dimids);
+	free(var->dimlens);
+	free(var->data);
+}
+
 void buildArakawaCGrid(int ncid)
 {
 	//	  psi(i,j+1)----v(i,j+1)----psi(i+1,j+1)
@@ -498,59 +669,24 @@ void buildArakawaCGrid(int ncid)
 	//		   |						 |
 	//	   psi(i,j)------v(i,j)------psi(i+1,j)
 	
-	struct NCVar {
-		int id;
-		char name[NC_MAX_NAME];
-		int ndims;
-		int dimids[NC_MAX_DIMS];
-		size_t dimlens[NC_MAX_DIMS];
-		float* data;
-	};
+	NCVar lon_u = getVar(ncid, "lon_u");
+	NCVar lat_u = getVar(ncid, "lat_u");
+	NCVar mask_u = getVar(ncid, "mask_u");
+	NCVar lat_v = getVar(ncid, "lat_v");
+	NCVar lon_v = getVar(ncid, "lon_v");
+	NCVar mask_v = getVar(ncid, "mask_v");
+	NCVar lat_psi = getVar(ncid, "lat_psi");
+	NCVar lon_psi = getVar(ncid, "lon_psi");
+	NCVar mask_psi = getVar(ncid, "mask_psi");
+	NCVar lat_rho = getVar(ncid, "lat_rho");
+	NCVar lon_rho = getVar(ncid, "lon_rho");
+	NCVar mask_rho = getVar(ncid, "mask_rho");
 
-
-	char* name_lat_u = "lat_u"; 
-	char* name_mask_u = "mask_u";
-	char* name_lat_v = "lat_v";
-	char* name_lon_v = "lon_v";
-	char* name_mask_v = "mask_v";
-	char* name_lat_psi = "lat_psi";
-	char* name_lon_psi = "lon_psi";
-	char* name_mask_psi = "mask_psi";
-	char* name_lat_rho = "lat_rho";
-	char* name_lon_rho = "lon_rho";
-	char* name_mask_rho = "mask_rho";
-
-	char* name_h_rho = "h";
-	char* name_s_rho = "s_rho";
-	char* name_s_w = "s_w";
-
-	NCVar lon_u;
-	strcpy(lon_u.name, "lon_u");
-	nc_inq_varid(ncid, lon_u.name, &lon_u.id);
-	nc_inq_varndims(ncid, lon_u.id, &lon_u.ndims);
-	//lon_u.dimids = (int*)malloc(lon_u.ndims * sizeof(int));
-	//lon_u.dimlens = (size_t*)malloc(lon_u.ndims * sizeof(size_t));
-	nc_inq_vardimid(ncid, lon_u.id, lon_u.dimids);
-	size_t data_size = 1;
-	for (int i = 0; i < lon_u.ndims; ++i)
-	{
-		nc_inq_dimlen(ncid, lon_u.dimids[i], &lon_u.dimlens[i]);
-		data_size *= lon_u.dimlens[i];
-	}
-
-	lon_u.data = (float*)malloc(data_size * sizeof(float));
-	nc_get_var_float(ncid, lon_u.id, (float*)lon_u.data);
-
-	float min_val, max_val;
-	min_val = max_val = lon_u.data[0];
-	for (size_t i = 0u; i < data_size; ++i)
-	{
-		if (lon_u.data[i] < min_val)
-			min_val = lon_u.data[i];
-
-		if (lon_u.data[i] > max_val)
-			max_val = lon_u.data[i];
-	}
-
-	printf("\nMin: %f\nMax: %f\n", min_val, max_val);
+	NCVar h_rho = getVar(ncid, "h");
+	NCVar s_rho = getVar(ncid, "s_rho");
+	NCVar s_w = getVar(ncid, "s_w");
+	
+	NCVar u = getVar(ncid, "u");
+	NCVar v = getVar(ncid, "v");
+	NCVar w = getVar(ncid, "w");
 }
