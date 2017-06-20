@@ -2,20 +2,51 @@
 
 #include <vector>
 
-extern struct NCVar;
+#include "NetCDFHelper.h"
 
 class ArakawaCGrid
 {
 public:
-	ArakawaCGrid(unsigned int width, unsigned int height, unsigned int vertical_levels);
+	struct GridPoint {
+		float lat;
+		float lon;
+		bool masked;
+	};
+
+	struct RhoPoint : public GridPoint {
+		float h;
+	};
+
+	struct AdvectionPoint : public GridPoint {
+		float vel;
+	};
+
+	ArakawaCGrid(int ncid);
 	~ArakawaCGrid();
 
-	void buildHorizontalGrid(NCVar *psi_lat, NCVar *psi_lon);
-	void buildRhoPoints(NCVar *rho_lat, NCVar *rho_lon);
-	void buildUVPoints(NCVar *u_lat, NCVar *u_lon, NCVar *v_lat, NCVar *v_lon);
+	void build();
 
 private:
-	unsigned int m_unWidth, m_unHeight, m_unLevels;
-	std::vector<float> m_S_w; // S-coordinate relative vertical w locations (at cell vertical boundaries)
-	std::vector<float> m_S_rho; // S-coordinate relative vertical rho locations (in middle of cells)
+	int m_iNCID;
+
+	// HORIZONTAL GRID STRUCTURE COMPONENTS
+	std::vector<std::vector<GridPoint>> m_vvPsiGrid;
+	std::vector<std::vector<RhoPoint>> m_vvRhoGrid;
+	std::vector<std::vector<AdvectionPoint>> m_vvUGrid;
+	std::vector<std::vector<AdvectionPoint>> m_vvVGrid;
+	std::vector<std::vector<AdvectionPoint>> m_vvWGrid;
+
+	std::pair<float, float> m_ffMinCoordinate, m_ffMaxCoordinate;
+
+	// VERTICAL GRID STRUCTURE COMPONENTS
+	unsigned int m_unSigmaLayers;
+	std::vector<float> m_vfSWRatios, m_vfSRhoRatios;
+
+	// DATA VARIABLES
+	NCVar *m_u;
+	NCVar *m_v;
+	NCVar *m_w;
+
+	void buildHorizontalGrid();
+	void buildVerticalGrid();
 };

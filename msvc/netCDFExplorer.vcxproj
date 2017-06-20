@@ -21,9 +21,11 @@
   <ItemGroup>
     <ClCompile Include="..\src\ArakawaCGrid.cpp" />
     <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\NetCDFHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\ArakawaCGrid.h" />
+    <ClInclude Include="..\src\NetCDFHelper.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C9C8E139-E138-457B-89CC-8974D1A80E26}</ProjectGuid>

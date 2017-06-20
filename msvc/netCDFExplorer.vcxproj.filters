@@ -21,9 +21,15 @@
     <ClCompile Include="..\src\ArakawaCGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\NetCDFHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\ArakawaCGrid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\NetCDFHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

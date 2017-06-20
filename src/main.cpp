@@ -19,121 +19,6 @@ void getNCTypeName(nc_type type, char* buffer);
 void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_t len);
 void printVarData(int ncid, int varID);
 
-struct NCVar {
-	int id;
-	char name[NC_MAX_NAME];
-	int ndims;
-	int* dimids;
-	size_t* dimlens;
-	size_t len;
-	float* data;
-	float min;
-	float max;
-	bool uses_fill;
-	float fill; // fill value, i.e., N/A or NULL
-
-	float* get(int dim1index = -1, int dim2index = -1, int dim3index = -1, int dim4index = -1)
-	{
-		//if (dim1index > -1 && ndims < 1 ||
-		//	dim2index > -1 && ndims < 2 ||
-		//	dim3index > -1 && ndims < 3 ||
-		//	dim4index > -1 && ndims < 4)
-		//{
-		//	printf("Bad index in %s.get()", name);
-		//	return NULL;
-		//}
-		
-		switch (ndims)
-		{
-		case 0:
-			return data;
-			break;
-		case 1:
-			if (dim1index < 0 || dim1index >= (int)dimlens[0])
-			{
-				printf("Bad index in dimension 1 of %s.get(): %d\n", name, dim1index);
-				return NULL;
-			}
-			if (dim2index != -1 || dim3index != -1 || dim4index != -1)
-			{
-				printf("There are only %d dimensions in %s!\n", ndims, name);
-				return NULL;
-			}
-			return &data[dim1index];
-			break;
-		case 2:
-			if (dim1index < 0 || dim1index >= (int)dimlens[0])
-			{
-				printf("Bad index in dimension 1 (length = %d) of %s.get(): %d\n", dimlens[0], name, dim1index);
-				return NULL;
-			}
-			if (dim2index < 0 || dim2index >= (int)dimlens[1])
-			{
-				printf("Bad index in dimension 2 (length = %d) of %s.get(): %d\n", dimlens[1], name, dim2index);
-				return NULL;
-			}
-			if (dim3index != -1 || dim4index != -1)
-			{
-				printf("There are only %d dimensions in %s!\n", ndims, name);
-				return NULL;
-			}
-			return &data[dim2index + dim1index * dimlens[1]];
-			break;
-		case 3:
-			if (dim1index < 0 || dim1index >= (int)dimlens[0])
-			{
-				printf("Bad index in dimension 1 (length = %d) of %s.get(): %d\n", dimlens[0], name, dim1index);
-				return NULL;
-			}
-			if (dim2index < 0 || dim2index >= (int)dimlens[1])
-			{
-				printf("Bad index in dimension 2 (length = %d) of %s.get(): %d\n", dimlens[1], name, dim2index);
-				return NULL;
-			}
-			if (dim3index < 0 || dim3index >= (int)dimlens[2])
-			{
-				printf("Bad index in dimension 3 (length = %d) of %s.get(): %d\n", dimlens[2], name, dim3index);
-				return NULL;
-			}
-			if (dim4index != -1)
-			{
-				printf("There are only %d dimensions in %s!\n", ndims, name);
-				return NULL;
-			}
-			return &data[dim3index + dim2index * dimlens[2] + dim1index * dimlens[2] * dimlens[1]];
-			break;
-		case 4:
-			if (dim1index < 0 || dim1index >= (int)dimlens[0])
-			{
-				printf("Bad index in dimension 1 (length = %d) of %s.get(): %d\n", dimlens[0], name, dim1index);
-				return NULL;
-			}
-			if (dim2index < 0 || dim2index >= (int)dimlens[1])
-			{
-				printf("Bad index in dimension 2 (length = %d) of %s.get(): %d\n", dimlens[1], name, dim2index);
-				return NULL;
-			}
-			if (dim3index < 0 || dim3index >= (int)dimlens[2])
-			{
-				printf("Bad index in dimension 3 (length = %d) of %s.get(): %d\n", dimlens[2], name, dim3index);
-				return NULL;
-			}
-			if (dim4index < 0 || dim4index >= (int)dimlens[3])
-			{
-				printf("Bad index in dimension 4 (length = %d) of %s.get(): %d\n", dimlens[3], name, dim4index);
-				return NULL;
-			}
-			return &data[dim4index + dim3index * dimlens[3] + dim2index * dimlens[3] * dimlens[2] + dim1index * dimlens[3] * dimlens[2] * dimlens[1]];
-			break;
-		}
-
-	}
-};
-
-NCVar getVar(int ncid, const char* var_name);
-void freeVar(NCVar* var);
-void buildArakawaCGrid(int ncid);
-
 int main(int argc, char* argv[])
 {
 	int status = NC_NOERR;
@@ -176,41 +61,65 @@ int main(int argc, char* argv[])
 		switch (choice)
 		{
 		case 0:
+		{
 			running = false;
 			break;
+		}
 		case 1:
+		{
 			printSummary(ncid);
 			break;
+		}
 		case 2:
+		{
 			printAttribs(ncid, NC_GLOBAL);
 			break;
+		}
 		case 3:
+		{
 			printDims(ncid, NC_GLOBAL);
 			break;
+		}
 		case 4:
+		{
 			printVarList(ncid, -1);
 			break;
+		}
 		case 5:
+		{
 			printVarList(ncid, 0);
 			break;
+		}
 		case 6:
+		{
 			printVarList(ncid, 1);
 			break;
+		}
 		case 7:
+		{
 			printVarList(ncid, 2);
 			break;
+		}
 		case 8:
+		{
 			printVarList(ncid, 3);
 			break;
+		}
 		case 9:
+		{
 			printVarList(ncid, 4);
 			break;
+		}
 		case 10:
-			buildArakawaCGrid(ncid);
+		{
+			ArakawaCGrid grid(ncid);
 			break;
+		}
 		default:
+		{
 			printf("ERROR: Invalid choice\n");
 			break;
+		}
 		}
 	}
 
@@ -602,93 +511,4 @@ void printVarData(int ncid, int varID)
 	}
 	
 	printf("\n\nDone!\n");
-}
-
-NCVar getVar(int ncid, const char* var_name)
-{
-	NCVar var;
-	strcpy(var.name, var_name);
-	nc_inq_varid(ncid, var.name, &var.id);
-	nc_inq_varndims(ncid, var.id, &var.ndims);
-	var.dimids = (int*)malloc(var.ndims * sizeof(int));
-	var.dimlens = (size_t*)malloc(var.ndims * sizeof(size_t));
-	nc_inq_vardimid(ncid, var.id, var.dimids);
-	var.len = 1;
-	for (int i = 0; i < var.ndims; ++i)
-	{
-		nc_inq_dimlen(ncid, var.dimids[i], &var.dimlens[i]);
-		var.len *= var.dimlens[i];
-	}
-
-	// allocate and get the data
-	var.data = (float*)malloc(var.len * sizeof(float));
-	nc_get_var_float(ncid, var.id, (float*)var.data);
-	
-	// check if data uses a fill value to designate NULL or N/A values
-	int usesFillVal = nc_get_att(ncid, var.id, "_FillValue", &(var.fill));
-	if (usesFillVal == NC_NOERR)
-	{
-		var.uses_fill = true;
-		var.min = var.max = var.fill;
-	}
-	else
-	{
-		var.uses_fill = false;
-		var.min = var.max = var.data[0];
-	}
-
-	for (size_t i = 0u; i < var.len; ++i)
-	{
-		if (var.data[i] < var.min && (!var.uses_fill || (var.uses_fill && var.fill != var.data[i])))
-			var.min = var.data[i];
-
-		if ((var.data[i] > var.max && !var.uses_fill) || 
-			(var.uses_fill && ((var.data[i] > var.max && var.max != var.fill && var.data[i] != var.fill) || (var.max == var.fill && var.data[i] != var.fill))))
-			var.max = var.data[i];
-	}
-
-	printf("\n%s\n\tMin: %f\n\tMax: %f\n", var.name, var.min, var.max);
-
-	return var;
-}
-
-void freeVar(NCVar* var)
-{
-	free(var->dimids);
-	free(var->dimlens);
-	free(var->data);
-}
-
-void buildArakawaCGrid(int ncid)
-{
-	//	  psi(i,j+1)----v(i,j+1)----psi(i+1,j+1)
-	//		   |						 |
-	//		   |						 |
-	//		   |						 |
-	//		u(i,j)      rho(i,j)	  u(i+1,j)
-	//		   |						 |
-	//         |						 |
-	//		   |						 |
-	//	   psi(i,j)------v(i,j)------psi(i+1,j)
-	
-	NCVar lon_u = getVar(ncid, "lon_u");
-	NCVar lat_u = getVar(ncid, "lat_u");
-	NCVar mask_u = getVar(ncid, "mask_u");
-	NCVar lat_v = getVar(ncid, "lat_v");
-	NCVar lon_v = getVar(ncid, "lon_v");
-	NCVar mask_v = getVar(ncid, "mask_v");
-	NCVar lat_psi = getVar(ncid, "lat_psi");
-	NCVar lon_psi = getVar(ncid, "lon_psi");
-	NCVar mask_psi = getVar(ncid, "mask_psi");
-	NCVar lat_rho = getVar(ncid, "lat_rho");
-	NCVar lon_rho = getVar(ncid, "lon_rho");
-	NCVar mask_rho = getVar(ncid, "mask_rho");
-
-	NCVar h_rho = getVar(ncid, "h");
-	NCVar s_rho = getVar(ncid, "s_rho");
-	NCVar s_w = getVar(ncid, "s_w");
-	
-	NCVar u = getVar(ncid, "u");
-	NCVar v = getVar(ncid, "v");
-	NCVar w = getVar(ncid, "w");
 }
