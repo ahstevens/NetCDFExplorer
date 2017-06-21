@@ -39,7 +39,7 @@ private:
 	std::pair<float, float> m_ffMinCoordinate, m_ffMaxCoordinate;
 
 	// VERTICAL GRID STRUCTURE COMPONENTS
-	unsigned int m_unSigmaLayers;
+	int m_nSigmaLayers;
 	std::vector<float> m_vfSWRatios, m_vfSRhoRatios;
 
 	// DATA VARIABLES

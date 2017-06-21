@@ -1,5 +1,7 @@
 #include "ArakawaCGrid.h"
 
+#include <ANN/ANN.h>
+
 #include <assert.h>
 
 ArakawaCGrid::ArakawaCGrid(int ncid)
@@ -27,10 +29,57 @@ void ArakawaCGrid::build()
 {
 	buildHorizontalGrid();
 	buildVerticalGrid();
+	
+	// Load up flow vector components
+	//m_u = new NCVar(m_iNCID, "u", false);
+	//m_v = new NCVar(m_iNCID, "v", false);
+	//m_w = new NCVar(m_iNCID, "w", false);
 
-	m_u = new NCVar(m_iNCID, "u", false);
-	m_v = new NCVar(m_iNCID, "v", false);
-	m_w = new NCVar(m_iNCID, "w", false);
+	int nPts = (int)m_vvRhoGrid.size() * (int)m_vvRhoGrid.front().size() * m_nSigmaLayers;
+
+	ANNpointArray dataPts = annAllocPts(nPts, 3);
+
+	int currPt = 0;
+	for (int i = 0; i < (int)m_vvRhoGrid.size(); ++i)
+	{
+		for (int j = 0; j < (int)m_vvRhoGrid.front().size(); ++j)
+		{
+			RhoPoint pt = m_vvRhoGrid[i][j];
+
+			for (int k = 0; k < m_nSigmaLayers; ++k)
+			{
+				float heightHere = m_vfSRhoRatios[k] * pt.h;
+
+				dataPts[currPt][0] = pt.lat;
+				dataPts[currPt][1] = pt.lon;
+				dataPts[currPt][2] = heightHere;
+
+				currPt++;
+			}
+		}
+	}
+
+	ANNkd_tree tree(dataPts, nPts, 3);
+
+	ANNpoint qryPt = annAllocPt(3);
+
+	qryPt[0] = m_ffMinCoordinate.first + (m_ffMaxCoordinate.first - m_ffMinCoordinate.first) / 2.0;
+	qryPt[1] = m_ffMinCoordinate.second + (m_ffMaxCoordinate.second - m_ffMinCoordinate.second) / 2.0;
+	qryPt[2] = 0.0;
+
+	int resultPts = tree.annkFRSearch(qryPt, 0.062501, 5);
+
+	ANNidxArray nnIdx = new ANNidx[resultPts];
+	ANNdistArray dists = new ANNdist[resultPts];
+
+	tree.annkFRSearch(qryPt, 0.062501, resultPts, nnIdx, dists);
+
+	printf("\nFound %d points in search area centered at (%f, %f, %f) with radius %f:\n", resultPts, qryPt[0], qryPt[1], qryPt[2], sqrt(0.062501));
+
+	for (int i = 0; i < resultPts; ++i)
+	{
+		printf("\t%d: (%f, %f, %f), distance = %f\n", nnIdx[i], dataPts[nnIdx[i]][0], dataPts[nnIdx[i]][1], dataPts[nnIdx[i]][2], dists[i]);
+	}
 }
 
 void ArakawaCGrid::buildHorizontalGrid()
@@ -54,10 +103,10 @@ void ArakawaCGrid::buildHorizontalGrid()
 	assert(lat_psi.dimlens[0] == lon_psi.dimlens[0]);
 	assert(lat_psi.dimlens[1] == lon_psi.dimlens[1]);
 
-	for (size_t i = 0u; i < lat_psi.dimlens[0]; ++i)
+	for (int i = 0u; i < (int)lat_psi.dimlens[0]; ++i)
 	{
 		std::vector<GridPoint> row;
-		for (size_t j = 0u; j < lat_psi.dimlens[1]; ++j)
+		for (int j = 0u; j < (int)lat_psi.dimlens[1]; ++j)
 		{
 			row.push_back(GridPoint{ *lat_psi.get(i, j), *lon_psi.get(i, j), *mask_psi.get(i, j) == 0.f });
 		}
@@ -84,10 +133,10 @@ void ArakawaCGrid::buildHorizontalGrid()
 	assert(h_rho.dimlens[0] == lat_rho.dimlens[0]);
 	assert(h_rho.dimlens[1] == lat_rho.dimlens[1]);
 
-	for (size_t i = 0u; i < lat_rho.dimlens[0]; ++i)
+	for (int i = 0u; i < (int)lat_rho.dimlens[0]; ++i)
 	{
 		std::vector<RhoPoint> row;
-		for (size_t j = 0u; j < lat_rho.dimlens[1]; ++j)
+		for (int j = 0u; j < (int)lat_rho.dimlens[1]; ++j)
 		{
 			RhoPoint temp;
 			temp.lat = *lat_rho.get(i, j);
@@ -117,10 +166,10 @@ void ArakawaCGrid::buildHorizontalGrid()
 	assert(lon_u.dimlens[0] == lon_psi.dimlens[0] + 1u);
 	assert(lon_u.dimlens[1] == lon_psi.dimlens[1]);
 
-	for (size_t i = 0u; i < lat_u.dimlens[0]; ++i)
+	for (int i = 0u; i < (int)lat_u.dimlens[0]; ++i)
 	{
 		std::vector<AdvectionPoint> row;
-		for (size_t j = 0u; j < lat_u.dimlens[1]; ++j)
+		for (int j = 0u; j < (int)lat_u.dimlens[1]; ++j)
 		{
 			AdvectionPoint temp;
 			temp.lat = *lat_u.get(i, j);
@@ -147,10 +196,10 @@ void ArakawaCGrid::buildHorizontalGrid()
 	assert(lon_v.dimlens[0] == lon_psi.dimlens[0]);
 	assert(lon_v.dimlens[1] == lon_psi.dimlens[1] + 1u);
 
-	for (size_t i = 0u; i < lat_v.dimlens[0]; ++i)
+	for (int i = 0u; i < (int)lat_v.dimlens[0]; ++i)
 	{
 		std::vector<AdvectionPoint> row;
-		for (size_t j = 0u; j < lat_v.dimlens[1]; ++j)
+		for (int j = 0u; j < (int)lat_v.dimlens[1]; ++j)
 		{
 			AdvectionPoint temp;
 			temp.lat = *lat_v.get(i, j);
@@ -182,11 +231,11 @@ void ArakawaCGrid::buildVerticalGrid()
 	NCVar s_rho(m_iNCID, "s_rho", false);
 	NCVar s_w(m_iNCID, "s_w", false);
 
-	m_unSigmaLayers = s_rho.dimlens[0];
+	m_nSigmaLayers = (int)s_rho.dimlens[0];
 
-	for (size_t i = 0; i < m_unSigmaLayers; ++i)
+	for (int i = 0; i < m_nSigmaLayers; ++i)
 		m_vfSRhoRatios.push_back(*s_rho.get(i));
 	
-	for (size_t i = 0; i < m_unSigmaLayers + 1; ++i)
+	for (int i = 0; i < m_nSigmaLayers + 1; ++i)
 		m_vfSWRatios.push_back(*s_w.get(i));
 }

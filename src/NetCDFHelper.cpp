@@ -94,12 +94,12 @@ float* NCVar::get(int dim1index, int dim2index, int dim3index, int dim4index)
 	case 2:
 		if (dim1index < 0 || dim1index >= (int)dimlens[0])
 		{
-			printf("Bad index in dimension 1 (length = %lu) of %s.get(): %d\n", dimlens[0], name, dim1index);
+			printf("Bad index in dimension 1 (length = %zu) of %s.get(): %d\n", dimlens[0], name, dim1index);
 			return NULL;
 		}
 		if (dim2index < 0 || dim2index >= (int)dimlens[1])
 		{
-			printf("Bad index in dimension 2 (length = %lu) of %s.get(): %d\n", dimlens[1], name, dim2index);
+			printf("Bad index in dimension 2 (length = %zu) of %s.get(): %d\n", dimlens[1], name, dim2index);
 			return NULL;
 		}
 		if (dim3index != -1 || dim4index != -1)
@@ -112,17 +112,17 @@ float* NCVar::get(int dim1index, int dim2index, int dim3index, int dim4index)
 	case 3:
 		if (dim1index < 0 || dim1index >= (int)dimlens[0])
 		{
-			printf("Bad index in dimension 1 (length = %lu) of %s.get(): %d\n", dimlens[0], name, dim1index);
+			printf("Bad index in dimension 1 (length = %zu) of %s.get(): %d\n", dimlens[0], name, dim1index);
 			return NULL;
 		}
 		if (dim2index < 0 || dim2index >= (int)dimlens[1])
 		{
-			printf("Bad index in dimension 2 (length = %lu) of %s.get(): %d\n", dimlens[1], name, dim2index);
+			printf("Bad index in dimension 2 (length = %zu) of %s.get(): %d\n", dimlens[1], name, dim2index);
 			return NULL;
 		}
 		if (dim3index < 0 || dim3index >= (int)dimlens[2])
 		{
-			printf("Bad index in dimension 3 (length = %lu) of %s.get(): %d\n", dimlens[2], name, dim3index);
+			printf("Bad index in dimension 3 (length = %zu) of %s.get(): %d\n", dimlens[2], name, dim3index);
 			return NULL;
 		}
 		if (dim4index != -1)
@@ -135,22 +135,22 @@ float* NCVar::get(int dim1index, int dim2index, int dim3index, int dim4index)
 	case 4:
 		if (dim1index < 0 || dim1index >= (int)dimlens[0])
 		{
-			printf("Bad index in dimension 1 (length = %lu) of %s.get(): %d\n", dimlens[0], name, dim1index);
+			printf("Bad index in dimension 1 (length = %zu) of %s.get(): %d\n", dimlens[0], name, dim1index);
 			return NULL;
 		}
 		if (dim2index < 0 || dim2index >= (int)dimlens[1])
 		{
-			printf("Bad index in dimension 2 (length = %lu) of %s.get(): %d\n", dimlens[1], name, dim2index);
+			printf("Bad index in dimension 2 (length = %zu) of %s.get(): %d\n", dimlens[1], name, dim2index);
 			return NULL;
 		}
 		if (dim3index < 0 || dim3index >= (int)dimlens[2])
 		{
-			printf("Bad index in dimension 3 (length = %lu) of %s.get(): %d\n", dimlens[2], name, dim3index);
+			printf("Bad index in dimension 3 (length = %zu) of %s.get(): %d\n", dimlens[2], name, dim3index);
 			return NULL;
 		}
 		if (dim4index < 0 || dim4index >= (int)dimlens[3])
 		{
-			printf("Bad index in dimension 4 (length = %lu) of %s.get(): %d\n", dimlens[3], name, dim4index);
+			printf("Bad index in dimension 4 (length = %zu) of %s.get(): %d\n", dimlens[3], name, dim4index);
 			return NULL;
 		}
 		return &data[dim4index + dim3index * dimlens[3] + dim2index * dimlens[3] * dimlens[2] + dim1index * dimlens[3] * dimlens[2] * dimlens[1]];
