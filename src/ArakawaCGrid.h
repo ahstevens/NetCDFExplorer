@@ -30,11 +30,11 @@ private:
 	int m_iNCID;
 
 	// HORIZONTAL GRID STRUCTURE COMPONENTS
-	std::vector<std::vector<GridPoint>> m_vvPsiGrid;
-	std::vector<std::vector<RhoPoint>> m_vvRhoGrid;
-	std::vector<std::vector<AdvectionPoint>> m_vvUGrid;
-	std::vector<std::vector<AdvectionPoint>> m_vvVGrid;
-	std::vector<std::vector<AdvectionPoint>> m_vvWGrid;
+	std::vector< std::vector<GridPoint> > m_vvPsiGrid;
+	std::vector< std::vector<RhoPoint> > m_vvRhoGrid;
+	std::vector< std::vector<AdvectionPoint> > m_vvUGrid;
+	std::vector< std::vector<AdvectionPoint> > m_vvVGrid;
+	std::vector< std::vector<AdvectionPoint> > m_vvWGrid;
 
 	std::pair<float, float> m_ffMinCoordinate, m_ffMaxCoordinate;
 

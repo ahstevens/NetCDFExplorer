@@ -1,14 +1,27 @@
-OBJS = main.o
-CC = g++
-DEBUG = -g
-CFLAGS = -Wall -c $(DEBUG)
-LFLAGS = -Wall $(DEBUG) -lnetcdf
+IDIR=include
+CC=g++
+CFLAGS=-I$(IDIR) -std=c++11
 
-netCDFExplorer : $(OBJS)
-	$(CC) $(LFLAGS) $(OBJS) -o netCDFExplorer
+ODIR=obj
+LDIR=lib
+SRCDIR=src
 
-main.o : src/main.cpp
-	$(CC) $(CFLAGS) src/main.cpp
+LIBS=-lm -lnetcdf
+
+_DEPS = NetCDFHelper.h ArakawaCGrid.h 
+DEPS = $(patsubst %,$(SRCDIR)/%,$(_DEPS))
+
+_OBJ = main.o NetCDFHelper.o ArakawaCGrid.o 
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+
+$(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+netCDFExplorer: $(OBJ)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+.PHONY: clean
 
 clean:
-	\rm *.o netCDFExplorer
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
