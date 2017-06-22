@@ -6,9 +6,9 @@ ODIR=obj
 LDIR=lib
 SRCDIR=src
 
-LIBS=-lm -lnetcdf
+LIBS=-lm -lnetcdf -lANN
 
-_DEPS = NetCDFHelper.h ArakawaCGrid.h 
+_DEPS = NetCDFHelper.h ArakawaCGrid.h
 DEPS = $(patsubst %,$(SRCDIR)/%,$(_DEPS))
 
 _OBJ = main.o NetCDFHelper.o ArakawaCGrid.o 
@@ -19,7 +19,7 @@ $(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 netCDFExplorer: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) -L$(LDIR) $(LIBS)
 
 .PHONY: clean
 

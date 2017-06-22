@@ -1,6 +1,7 @@
 #include "ArakawaCGrid.h"
 
 #include <ANN/ANN.h>
+#include <LatLong-UTM.h>
 
 #include <assert.h>
 
@@ -50,8 +51,12 @@ void ArakawaCGrid::build()
 			{
 				float heightHere = m_vfSRhoRatios[k] * pt.h;
 
-				dataPts[currPt][0] = pt.lat;
-				dataPts[currPt][1] = pt.lon;
+				double northing, easting;
+				int zone;
+				LLtoUTM(22, pt.lat, pt.lon, northing, easting, zone);
+
+				dataPts[currPt][0] = easting;
+				dataPts[currPt][1] = northing;
 				dataPts[currPt][2] = heightHere;
 
 				currPt++;
@@ -67,14 +72,21 @@ void ArakawaCGrid::build()
 	qryPt[1] = m_ffMinCoordinate.second + (m_ffMaxCoordinate.second - m_ffMinCoordinate.second) / 2.0;
 	qryPt[2] = 0.0;
 
-	int resultPts = tree.annkFRSearch(qryPt, 0.062501, 5);
+	double northing, easting;
+	int zone;
+	LLtoUTM(22, qryPt[0], qryPt[1], northing, easting, zone);
+	qryPt[0] = easting;
+	qryPt[1] = northing;
+
+	float r = 100.f;
+	int resultPts = tree.annkFRSearch(qryPt, r*r, 5);
 
 	ANNidxArray nnIdx = new ANNidx[resultPts];
 	ANNdistArray dists = new ANNdist[resultPts];
 
-	tree.annkFRSearch(qryPt, 0.062501, resultPts, nnIdx, dists);
+	tree.annkFRSearch(qryPt, r*r, resultPts, nnIdx, dists);
 
-	printf("\nFound %d points in search area centered at (%f, %f, %f) with radius %f:\n", resultPts, qryPt[0], qryPt[1], qryPt[2], sqrt(0.062501));
+	printf("\nFound %d points in search area centered at (%f, %f, %f) with radius %f:\n", resultPts, qryPt[0], qryPt[1], qryPt[2], r);
 
 	for (int i = 0; i < resultPts; ++i)
 	{
