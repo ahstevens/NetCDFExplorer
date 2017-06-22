@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <ANN/ANN.h>
 
 #include "NetCDFHelper.h"
 
@@ -24,7 +25,8 @@ public:
 	ArakawaCGrid(int ncid);
 	~ArakawaCGrid();
 
-	void build();
+	bool contains(float x, float y, float z);
+	bool getUVWat(float x, float y, float z, float t, float &u, float &v, float &w);
 
 private:
 	int m_iNCID;
@@ -37,6 +39,7 @@ private:
 	std::vector< std::vector<AdvectionPoint> > m_vvWGrid;
 
 	std::pair<float, float> m_ffMinCoordinate, m_ffMaxCoordinate;
+	float m_fMinHeight, m_fMaxHeight;
 
 	// VERTICAL GRID STRUCTURE COMPONENTS
 	int m_nSigmaLayers;
@@ -47,6 +50,10 @@ private:
 	NCVar *m_v;
 	NCVar *m_w;
 
+	void build();
 	void buildHorizontalGrid();
 	void buildVerticalGrid();
+
+	// KD-TREE FOR SPATIAL SEARCHING
+	ANNkd_tree *m_pKDTree;
 };

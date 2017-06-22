@@ -1,6 +1,5 @@
 #include "ArakawaCGrid.h"
 
-#include <ANN/ANN.h>
 #include <LatLong-UTM.h>
 
 #include <assert.h>
@@ -10,6 +9,7 @@ ArakawaCGrid::ArakawaCGrid(int ncid)
 	, m_u(NULL)
 	, m_v(NULL)
 	, m_w(NULL)
+	, m_pKDTree(NULL)
 {
 	build();
 }
@@ -24,6 +24,63 @@ ArakawaCGrid::~ArakawaCGrid()
 
 	if (m_w)
 		delete m_w;
+
+	if (m_pKDTree)
+	{
+		ANNpointArray pts = m_pKDTree->thePoints();
+		annDeallocPts(pts);
+	}
+}
+
+bool ArakawaCGrid::contains(float x, float y, float z)
+{
+	double nMax, nMin, eMax, eMin;
+	int zone;
+	LLtoUTM(22, m_ffMinCoordinate.first, m_ffMinCoordinate.second, nMin, eMin, zone);
+	LLtoUTM(22, m_ffMaxCoordinate.first, m_ffMaxCoordinate.second, nMax, eMax, zone);
+
+	if (x < eMin)
+		return false;
+	else if (x > eMax)
+		return false;
+	else if (y < nMin)
+		return false;
+	else if (y > nMax)
+		return false;
+	else if (z < m_fMinHeight)
+		return false;
+	else if (z > m_fMaxHeight)
+		return false;
+	else
+		return true;
+
+	return false;
+}
+
+bool ArakawaCGrid::getUVWat(float x, float y, float z, float t, float & u, float & v, float & w)
+{
+	if (!contains(x, y, z))
+	{
+		u = v = w = 0.f;
+		return false;
+	}
+	
+	double northing, easting;
+	int zone;
+	LLtoUTM(22, x, y, northing, easting, zone);
+
+	ANNpoint pt = annAllocPt(3);
+	pt[0] = easting;
+	pt[1] = northing;
+	pt[2] = z;
+	ANNidxArray indArr = new ANNidx[1];
+	ANNdistArray distArr = new ANNdist[1];
+	m_pKDTree->annkSearch(pt, 1, indArr, distArr);
+
+	// Unflatten indices
+	int idxZ = (indArr[0] / (m_vvRhoGrid.size() * m_vvRhoGrid.front().size())) % m_nSigmaLayers;
+	int idxY = (indArr[0] / m_vvRhoGrid.front().size()) % m_vvRhoGrid.size();
+	int idxX = indArr[0] % m_vvRhoGrid.front().size();
 }
 
 void ArakawaCGrid::build()
@@ -36,9 +93,9 @@ void ArakawaCGrid::build()
 	//m_v = new NCVar(m_iNCID, "v", false);
 	//m_w = new NCVar(m_iNCID, "w", false);
 
-	int nPts = (int)m_vvRhoGrid.size() * (int)m_vvRhoGrid.front().size() * m_nSigmaLayers;
+	int nRhoPts = (int)m_vvRhoGrid.size() * (int)m_vvRhoGrid.front().size() * m_nSigmaLayers;
 
-	ANNpointArray dataPts = annAllocPts(nPts, 3);
+	ANNpointArray dataPts = annAllocPts(nRhoPts, 3);
 
 	int currPt = 0;
 	for (int i = 0; i < (int)m_vvRhoGrid.size(); ++i)
@@ -64,27 +121,24 @@ void ArakawaCGrid::build()
 		}
 	}
 
-	ANNkd_tree tree(dataPts, nPts, 3);
+	m_pKDTree = new ANNkd_tree(dataPts, nRhoPts, 3);
 
 	ANNpoint qryPt = annAllocPt(3);
-
-	qryPt[0] = m_ffMinCoordinate.first + (m_ffMaxCoordinate.first - m_ffMinCoordinate.first) / 2.0;
-	qryPt[1] = m_ffMinCoordinate.second + (m_ffMaxCoordinate.second - m_ffMinCoordinate.second) / 2.0;
+	
+	int zone;
+	LLtoUTM(22, 
+		m_ffMinCoordinate.first + (m_ffMaxCoordinate.first - m_ffMinCoordinate.first) / 2.0, 
+		m_ffMinCoordinate.second + (m_ffMaxCoordinate.second - m_ffMinCoordinate.second) / 2.0, 
+		qryPt[1], qryPt[0], zone);
 	qryPt[2] = 0.0;
 
-	double northing, easting;
-	int zone;
-	LLtoUTM(22, qryPt[0], qryPt[1], northing, easting, zone);
-	qryPt[0] = easting;
-	qryPt[1] = northing;
-
 	float r = 100.f;
-	int resultPts = tree.annkFRSearch(qryPt, r*r, 5);
+	int resultPts = m_pKDTree->annkFRSearch(qryPt, r*r, 5);
 
 	ANNidxArray nnIdx = new ANNidx[resultPts];
 	ANNdistArray dists = new ANNdist[resultPts];
 
-	tree.annkFRSearch(qryPt, r*r, resultPts, nnIdx, dists);
+	m_pKDTree->annkFRSearch(qryPt, r*r, resultPts, nnIdx, dists);
 
 	printf("\nFound %d points in search area centered at (%f, %f, %f) with radius %f:\n", resultPts, qryPt[0], qryPt[1], qryPt[2], r);
 
@@ -108,8 +162,8 @@ void ArakawaCGrid::buildHorizontalGrid()
 
 
 	// PSI POINTS
-	NCVar lat_psi(m_iNCID, "lat_psi", false);
-	NCVar lon_psi(m_iNCID, "lon_psi", false);
+	NCVar lat_psi(m_iNCID, "lat_psi", true);
+	NCVar lon_psi(m_iNCID, "lon_psi", true);
 	NCVar mask_psi(m_iNCID, "mask_psi", false);
 
 	assert(lat_psi.dimlens[0] == lon_psi.dimlens[0]);
@@ -124,6 +178,9 @@ void ArakawaCGrid::buildHorizontalGrid()
 		}
 		m_vvPsiGrid.push_back(row);
 	}
+	
+	m_ffMinCoordinate = std::pair<float, float>(lat_psi.min, lon_psi.min);
+	m_ffMaxCoordinate = std::pair<float, float>(lat_psi.max, lon_psi.max);
 
 
 	// RHO POINTS
@@ -141,7 +198,7 @@ void ArakawaCGrid::buildHorizontalGrid()
 	assert(lon_rho.dimlens[1] == lon_psi.dimlens[1] + 1u);
 
 	// populate cell heights at rho points too while we're at it
-	NCVar h_rho(m_iNCID, "h", false);
+	NCVar h_rho(m_iNCID, "h", true);
 	assert(h_rho.dimlens[0] == lat_rho.dimlens[0]);
 	assert(h_rho.dimlens[1] == lat_rho.dimlens[1]);
 
@@ -160,9 +217,8 @@ void ArakawaCGrid::buildHorizontalGrid()
 		m_vvRhoGrid.push_back(row);
 	}
 
-	m_ffMinCoordinate = std::pair<float, float>(lat_rho.min, lon_rho.min);
-	m_ffMaxCoordinate = std::pair<float, float>(lat_rho.max, lon_rho.max);
-
+	m_fMinHeight = h_rho.min;
+	m_fMaxHeight = h_rho.max;
 
 	// U POINTS
 	NCVar lat_u(m_iNCID, "lat_u", false);
