@@ -161,3 +161,41 @@ float* NCVar::get(int dim1index, int dim2index, int dim3index, int dim4index)
 	}
 
 }
+
+// Recover the multidimensional indices from a flattened 1D array index. Last dimension varies fastest.
+int* recoverIndex(int flatIndex, int nDims, int *dimLens)
+{
+	int* mul = new int[nDims];
+	int* indices = new int[nDims];
+
+	mul[nDims - 1] = 1;
+	indices[nDims - 1] = (flatIndex) % dimLens[nDims - 1];
+
+	for (int i = nDims - 2; i >= 0; i--)
+	{
+		mul[i] = mul[i + 1] * dimLens[i + 1];
+		indices[i] = (flatIndex / mul[i]) % dimLens[i];
+	}
+
+	delete mul;
+
+	return indices;
+}
+
+int flattenIndex(int * indices, int nDims, int * dimLens)
+{
+	int index = 0;
+
+	for (int i = 0; i < nDims; ++i)
+	{
+		int mul = 1;
+		for (int j = nDims - 1; j > i; j--)
+		{
+			mul *= dimLens[j];
+		}
+
+		index += indices[i] * mul;
+	}
+
+	return index;
+}

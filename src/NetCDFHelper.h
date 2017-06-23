@@ -23,3 +23,8 @@ private:
 	bool uses_fill;
 	float fill; // fill value, i.e., N/A or NULL
 };
+
+
+// Recover the multidimensional indices from a flattened 1D array index. Last dimension varies fastest.
+int* recoverIndex(int flatIndex, int nDims, int *dimLens);
+int flattenIndex(int* indices, int nDims, int *dimLens);

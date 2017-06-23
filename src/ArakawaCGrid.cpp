@@ -12,6 +12,15 @@ ArakawaCGrid::ArakawaCGrid(int ncid)
 	, m_pKDTree(NULL)
 {
 	build();
+	
+	float x, y, z;
+	x = m_ffMinCoordinate.first + (m_ffMaxCoordinate.first - m_ffMinCoordinate.first) / 2.0;
+	y = m_ffMinCoordinate.second + (m_ffMaxCoordinate.second - m_ffMinCoordinate.second) / 2.0;
+	z = m_fMinHeight + (m_fMaxHeight - m_fMinHeight) / 2.f;
+
+	float u, v, w;
+	getUVWat(x, y, z, 0, u, v, w);
+	
 }
 
 ArakawaCGrid::~ArakawaCGrid()
@@ -34,18 +43,21 @@ ArakawaCGrid::~ArakawaCGrid()
 
 bool ArakawaCGrid::contains(float x, float y, float z)
 {
-	double nMax, nMin, eMax, eMin;
+	double x_conv, y_conv;
 	int zone;
+	LLtoUTM(22, x, y, y_conv, x_conv, zone);
+
+	double nMax, nMin, eMax, eMin;
 	LLtoUTM(22, m_ffMinCoordinate.first, m_ffMinCoordinate.second, nMin, eMin, zone);
 	LLtoUTM(22, m_ffMaxCoordinate.first, m_ffMaxCoordinate.second, nMax, eMax, zone);
 
-	if (x < eMin)
+	if (x_conv < eMin)
 		return false;
-	else if (x > eMax)
+	else if (x_conv > eMax)
 		return false;
-	else if (y < nMin)
+	else if (y_conv < nMin)
 		return false;
-	else if (y > nMax)
+	else if (y_conv > nMax)
 		return false;
 	else if (z < m_fMinHeight)
 		return false;
@@ -74,78 +86,53 @@ bool ArakawaCGrid::getUVWat(float x, float y, float z, float t, float & u, float
 	pt[1] = northing;
 	pt[2] = z;
 	ANNidxArray indArr = new ANNidx[1];
-	ANNdistArray distArr = new ANNdist[1];
-	m_pKDTree->annkSearch(pt, 1, indArr, distArr);
+	ANNdistArray sqDistArr = new ANNdist[1];
 
-	// Unflatten indices
-	int idxZ = (indArr[0] / (m_vvRhoGrid.size() * m_vvRhoGrid.front().size())) % m_nSigmaLayers;
-	int idxY = (indArr[0] / m_vvRhoGrid.front().size()) % m_vvRhoGrid.size();
-	int idxX = indArr[0] % m_vvRhoGrid.front().size();
+	// search the KD tree to find which Arakwa C-grid cell we're in
+	m_pKDTree->annkSearch(pt, 1, indArr, sqDistArr);
+
+	int dimLens[3] = { m_nSigmaLayers, m_vvRhoGrid.size(), m_vvRhoGrid.front().size() };
+	int* inds = recoverIndex(indArr[0], 3, dimLens); // 3D index from flat array index
+
+	int sigmaLayer = inds[0]; // 0 is sea surface
+
+	// get flow components in the C-grid cell
+	float uWest = *m_u->get(t, sigmaLayer, inds[1], inds[2] - 1);
+	if (uWest == m_u->fill) uWest = 0.f;
+	float uEast = *m_u->get(t, sigmaLayer, inds[1], inds[2]);
+	if (uEast == m_u->fill) uEast = 0.f;
+	float vSouth = *m_v->get(t, sigmaLayer, inds[1] - 1, inds[2]);
+	if (vSouth == m_v->fill) vSouth = 0.f;
+	float vNorth = *m_v->get(t, sigmaLayer, inds[1], inds[2]);
+	if (vNorth == m_v->fill) vNorth = 0.f;
+	float wBottom = *m_w->get(t, sigmaLayer, inds[1], inds[2]);
+	if (wBottom == m_w->fill) wBottom = 0.f;
+	float wTop = *m_w->get(t, sigmaLayer + 1, inds[1], inds[2]);
+	if (wTop == m_w->fill) wTop = 0.f;
+
+	printf("%f -> %f\n%f\n^\n|\n%f\n%f, %f", uWest, uEast, vSouth, vNorth, wBottom, wTop);
+
+	return true;
 }
 
 void ArakawaCGrid::build()
 {
 	buildHorizontalGrid();
 	buildVerticalGrid();
+	buildKDTree();
 	
 	// Load up flow vector components
-	//m_u = new NCVar(m_iNCID, "u", false);
-	//m_v = new NCVar(m_iNCID, "v", false);
-	//m_w = new NCVar(m_iNCID, "w", false);
+	printf("Loading u-component flow data... ");
+	m_u = new NCVar(m_iNCID, "u", false);
+	printf(" done!\n");
 
-	int nRhoPts = (int)m_vvRhoGrid.size() * (int)m_vvRhoGrid.front().size() * m_nSigmaLayers;
+	printf("Loading v-component flow data... ");
+	m_v = new NCVar(m_iNCID, "v", false);
+	printf(" done!\n");
 
-	ANNpointArray dataPts = annAllocPts(nRhoPts, 3);
-
-	int currPt = 0;
-	for (int i = 0; i < (int)m_vvRhoGrid.size(); ++i)
-	{
-		for (int j = 0; j < (int)m_vvRhoGrid.front().size(); ++j)
-		{
-			RhoPoint pt = m_vvRhoGrid[i][j];
-
-			for (int k = 0; k < m_nSigmaLayers; ++k)
-			{
-				float heightHere = m_vfSRhoRatios[k] * pt.h;
-
-				double northing, easting;
-				int zone;
-				LLtoUTM(22, pt.lat, pt.lon, northing, easting, zone);
-
-				dataPts[currPt][0] = easting;
-				dataPts[currPt][1] = northing;
-				dataPts[currPt][2] = heightHere;
-
-				currPt++;
-			}
-		}
-	}
-
-	m_pKDTree = new ANNkd_tree(dataPts, nRhoPts, 3);
-
-	ANNpoint qryPt = annAllocPt(3);
-	
-	int zone;
-	LLtoUTM(22, 
-		m_ffMinCoordinate.first + (m_ffMaxCoordinate.first - m_ffMinCoordinate.first) / 2.0, 
-		m_ffMinCoordinate.second + (m_ffMaxCoordinate.second - m_ffMinCoordinate.second) / 2.0, 
-		qryPt[1], qryPt[0], zone);
-	qryPt[2] = 0.0;
-
-	float r = 100.f;
-	int resultPts = m_pKDTree->annkFRSearch(qryPt, r*r, 5);
-
-	ANNidxArray nnIdx = new ANNidx[resultPts];
-	ANNdistArray dists = new ANNdist[resultPts];
-
-	m_pKDTree->annkFRSearch(qryPt, r*r, resultPts, nnIdx, dists);
-
-	printf("\nFound %d points in search area centered at (%f, %f, %f) with radius %f:\n", resultPts, qryPt[0], qryPt[1], qryPt[2], r);
-
-	for (int i = 0; i < resultPts; ++i)
-	{
-		printf("\t%d: (%f, %f, %f), distance = %f\n", nnIdx[i], dataPts[nnIdx[i]][0], dataPts[nnIdx[i]][1], dataPts[nnIdx[i]][2], dists[i]);
-	}
+	printf("Loading w-component flow data... ");
+	m_w = new NCVar(m_iNCID, "w", false);
+	printf(" done!\n");
 }
 
 void ArakawaCGrid::buildHorizontalGrid()
@@ -184,8 +171,8 @@ void ArakawaCGrid::buildHorizontalGrid()
 
 
 	// RHO POINTS
-	NCVar lat_rho(m_iNCID, "lat_rho", true);
-	NCVar lon_rho(m_iNCID, "lon_rho", true);
+	NCVar lat_rho(m_iNCID, "lat_rho", false);
+	NCVar lon_rho(m_iNCID, "lon_rho", false);
 	NCVar mask_rho(m_iNCID, "mask_rho", false);
 
 	assert(lat_rho.dimlens[0] == lon_rho.dimlens[0]);
@@ -217,8 +204,12 @@ void ArakawaCGrid::buildHorizontalGrid()
 		m_vvRhoGrid.push_back(row);
 	}
 
-	m_fMinHeight = h_rho.min;
-	m_fMaxHeight = h_rho.max;
+	// Get min/max heights and depths
+	m_fMinDepth = h_rho.min;
+	m_fMaxHeight = -m_fMinDepth;
+
+	m_fMaxDepth = h_rho.max;
+	m_fMinHeight = -m_fMaxDepth;
 
 	// U POINTS
 	NCVar lat_u(m_iNCID, "lat_u", false);
@@ -306,4 +297,37 @@ void ArakawaCGrid::buildVerticalGrid()
 	
 	for (int i = 0; i < m_nSigmaLayers + 1; ++i)
 		m_vfSWRatios.push_back(*s_w.get(i));
+}
+
+void ArakawaCGrid::buildKDTree()
+{
+	int nRhoPts = (int)m_vvRhoGrid.size() * (int)m_vvRhoGrid.front().size() * m_nSigmaLayers;
+
+	ANNpointArray dataPts = annAllocPts(nRhoPts, 3);
+
+	int currPt = 0;
+	for (int i = 0; i < (int)m_vvRhoGrid.size(); ++i)
+	{
+		for (int j = 0; j < (int)m_vvRhoGrid.front().size(); ++j)
+		{
+			RhoPoint pt = m_vvRhoGrid[i][j];
+
+			for (int k = 0; k < m_nSigmaLayers; ++k)
+			{
+				float heightHere = m_vfSRhoRatios[k] * pt.h;
+
+				double northing, easting;
+				int zone;
+				LLtoUTM(22, pt.lat, pt.lon, northing, easting, zone);
+
+				dataPts[currPt][0] = easting;
+				dataPts[currPt][1] = northing;
+				dataPts[currPt][2] = heightHere;
+
+				currPt++;
+			}
+		}
+	}
+
+	m_pKDTree = new ANNkd_tree(dataPts, nRhoPts, 3);
 }

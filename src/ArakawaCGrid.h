@@ -25,7 +25,10 @@ public:
 	ArakawaCGrid(int ncid);
 	~ArakawaCGrid();
 
+	// Is the point contained withinin the Psi-grid and sigma layer boundaries? Z is height from sea surface
 	bool contains(float x, float y, float z);
+
+	// z is height from sea surface (usually negative); or, depth value with a negative slapped on the front
 	bool getUVWat(float x, float y, float z, float t, float &u, float &v, float &w);
 
 private:
@@ -40,6 +43,7 @@ private:
 
 	std::pair<float, float> m_ffMinCoordinate, m_ffMaxCoordinate;
 	float m_fMinHeight, m_fMaxHeight;
+	float m_fMinDepth, m_fMaxDepth;
 
 	// VERTICAL GRID STRUCTURE COMPONENTS
 	int m_nSigmaLayers;
@@ -53,6 +57,7 @@ private:
 	void build();
 	void buildHorizontalGrid();
 	void buildVerticalGrid();
+	void buildKDTree();
 
 	// KD-TREE FOR SPATIAL SEARCHING
 	ANNkd_tree *m_pKDTree;
