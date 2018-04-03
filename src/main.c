@@ -262,26 +262,7 @@ void printVarList(int ncid, int dimFilter)
 
 		printAttribs(ncid, choice);
 
-		while (true)
-		{
-			printf("\nEnter 0 to dump variable data or -1 to go back: ");
-
-			int dumpData = NC_MIN_INT;
-			scanf("%d", &dumpData);
-			while (getchar() != '\n');
-
-			if (dumpData == 0)
-			{
-				printVarData(ncid, choice);
-				break;
-			}
-			else if (dumpData == -1)
-			{
-				break;
-			}
-
-			printf("ERROR: Invalid selection\n");
-		}
+		printVarData(ncid, choice);
 	}
 
 	free(indexFilter);
@@ -421,6 +402,15 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 			printf("%d ", val[i]);
 		break;
 	}
+	case NC_SHORT:
+	{
+		short* val = (short*)malloc(len * sizeof(short));
+		status = nc_get_att(ncid, varID, attribName, val);
+		ERR(status);
+		for (int i = 0; i < len; ++i)
+			printf("%hi ", val[i]);
+		break;
+	}
 	default:
 		break;
 	}
@@ -430,53 +420,167 @@ void printVarData(int ncid, int varID)
 {
 	char varName[NC_MAX_NAME];
 	nc_type varType;
-	int nDims, dimIDs[NC_MAX_VAR_DIMS], nAtts;
+	int nDims, dimIDs[NC_MAX_VAR_DIMS], *dimLens, nAtts;
 	int status = nc_inq_var(ncid, varID, varName, &varType, &nDims, dimIDs, &nAtts);
 	ERR(status);
 
-	int flattenedDimSize = 1;
+	dimLens = (int*)malloc(nDims * sizeof(int));
+
+	unsigned valuecount = 1;
 
 	for (int i = 0; i < nDims; ++i)
 	{
-		size_t dimLen;
-		nc_inq_dimlen(ncid, dimIDs[i], &dimLen);
-		flattenedDimSize *= (int)dimLen;
+		nc_inq_dimlen(ncid, dimIDs[i], &dimLens[i]);
+		valuecount *= (unsigned)dimLens[i];
 	}
 
-	printf("Dumping %d values from %d dimensions:\n\n", flattenedDimSize, nDims);
+	float val_offset = 0.f;
+	float val_scale = 1.f;
+
+	for (int i = 0; i < nAtts; ++i)
+	{
+		char attrName[NC_MAX_NAME + 1];
+		nc_type attrType;
+		size_t attrLen;
+
+		nc_inq_attname(ncid, varID, i, attrName);
+		ERR(status);
+
+		if (strcmp(attrName, "add_offset") == 0)
+		{
+			status = nc_get_att(ncid, varID, attrName, &val_offset);
+			ERR(status);
+		}
+
+		if (strcmp(attrName, "scale_factor") == 0)
+		{
+			status = nc_get_att(ncid, varID, attrName, &val_scale);
+			ERR(status);
+		}
+	}
+
+	printf("\nSUMMARY:\n\n   Size: %d (%d", nDims, dimLens[0]);
+	for (int i = 1; i < nDims; ++i)
+		printf("x%d", dimLens[i]);
+	printf(") dimensions\n  Count: %d values\n\n", valuecount);
 
 	switch (varType)
 	{
 	case NC_FLOAT:
 	{
-		float* val = (float*)malloc(flattenedDimSize * sizeof(float));
-		status = nc_get_var_float(ncid, varID, val);
+		float* vals = (float*)malloc(valuecount * sizeof(float));
+
+		float fillval;
+		bool isfillval = nc_get_att(ncid, varID, "_FillValue", &fillval) == NC_NOERR;
+
+		status = nc_get_var_float(ncid, varID, vals);
 		ERR(status);
-		for (int i = 0; i < flattenedDimSize; ++i)
-			printf("%f ", val[i]);
+
+		float minVal = NC_MAX_FLOAT;
+		float maxVal = NC_MIN_FLOAT;
+
+		long double avgVal = 0; // this could overflow
+
+		for (int i = 0; i < valuecount; ++i)
+		{
+			if (isfillval && vals[i] == fillval) continue;
+			if (vals[i] < minVal) minVal = vals[i];
+			if (vals[i] > maxVal) maxVal = vals[i];
+			avgVal += (long double)vals[i];
+			//printf("%lf ", val[i]);
+		}
+
+		printf("Raw Min: %f\nRaw Max: %f\n  Range: %f\nAverage: %f\n", minVal, maxVal, maxVal - minVal, avgVal / (float)valuecount);
+
 		break;
 	}
 	case NC_DOUBLE:
 	{
-		double* val = (double*)malloc(flattenedDimSize * sizeof(double));
-		status = nc_get_var_double(ncid, varID, val);
+		double* vals = (double*)malloc(valuecount * sizeof(double));
+		
+		double fillval;
+		bool isfillval = nc_get_att(ncid, varID, "_FillValue", &fillval) == NC_NOERR;
+
+		status = nc_get_var_double(ncid, varID, vals);
 		ERR(status);
-		for (int i = 0; i < flattenedDimSize; ++i)
-			printf("%f ", val[i]);
+
+		double minVal = NC_MAX_DOUBLE;
+		double maxVal = NC_MIN_DOUBLE;
+
+		long double avgVal = 0; // this could overflow
+
+		for (int i = 0; i < valuecount; ++i)
+		{
+			if (isfillval && vals[i] == fillval) continue;
+			if (vals[i] < minVal) minVal = vals[i];
+			if (vals[i] > maxVal) maxVal = vals[i];
+			avgVal += (long double)vals[i];
+			//printf("%lf ", val[i]);
+		}
+
+		printf("Raw Min: %f\nRaw Max: %f\n  Range: %f\nAverage: %f\n", minVal, maxVal, maxVal - minVal, avgVal / (double)valuecount);
+
 		break;
 	}
 	case NC_INT:
 	{
-		int* val = (int*)malloc(flattenedDimSize * sizeof(int));
-		status = nc_get_var_int(ncid, varID, val);
+		int* vals = (int*)malloc(valuecount * sizeof(int));
+
+		int fillval;
+		bool isfillval = nc_get_att(ncid, varID, "_FillValue", &fillval) == NC_NOERR;
+
+		status = nc_get_var_int(ncid, varID, vals);
 		ERR(status);
-		for (int i = 0; i < flattenedDimSize; ++i)
-			printf("%d ", val[i]);
+
+		int minVal = NC_MAX_INT;
+		int maxVal = NC_MIN_INT;
+
+		long long avgVal = 0;
+
+		for (int i = 0; i < valuecount; ++i)
+		{
+			if (isfillval && vals[i] == fillval) continue;
+			if (vals[i] < minVal) minVal = vals[i];
+			if (vals[i] > maxVal) maxVal = vals[i];
+			avgVal += (long long)vals[i];
+			//printf("%d ", vals[i]);
+		}
+
+		printf("Raw Min: %d\nRaw Max: %d\n  Range: %d\nAverage: %f\n", minVal, maxVal, maxVal - minVal, (float)avgVal / (float)valuecount);
+
+		break;
+	}
+	case NC_SHORT:
+	{
+		short* vals = (short*)malloc(valuecount * sizeof(short));
+
+		short fillval;
+		bool isfillval = nc_get_att(ncid, varID, "_FillValue", &fillval) == NC_NOERR;
+
+		status = nc_get_var_short(ncid, varID, vals);
+		ERR(status);
+
+		short minVal = NC_MAX_SHORT;
+		short maxVal = NC_MIN_SHORT;
+
+		long long avgVal = 0;
+
+		for (int i = 0; i < valuecount; ++i)
+		{
+			if (isfillval && vals[i] == fillval) continue;
+			if (vals[i] < minVal) minVal = vals[i];
+			if (vals[i] > maxVal) maxVal = vals[i];
+			avgVal += (long long)vals[i];
+			//printf("%hi ", val[i]);
+		}
+
+		printf("Raw Min: %hi\nRaw Max: %hi\n  Range: %hi\nAverage: %f\n", minVal, maxVal, maxVal - minVal, (float)avgVal / (float)valuecount);
+
 		break;
 	}
 	default:
 		break;
 	}
 	
-	printf("\n\nDone!\n");
+	printf("\n");
 }
