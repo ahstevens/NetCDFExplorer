@@ -481,7 +481,7 @@ void printVarData(int ncid, int varID)
 
 		long double avgVal = 0; // this could overflow
 
-		for (int i = 0; i < valuecount; ++i)
+		for (unsigned i = 0; i < valuecount; ++i)
 		{
 			if (isfillval && vals[i] == fillval) continue;
 			if (vals[i] < minVal) minVal = vals[i];
@@ -509,7 +509,7 @@ void printVarData(int ncid, int varID)
 
 		long double avgVal = 0; // this could overflow
 
-		for (int i = 0; i < valuecount; ++i)
+		for (unsigned i = 0; i < valuecount; ++i)
 		{
 			if (isfillval && vals[i] == fillval) continue;
 			if (vals[i] < minVal) minVal = vals[i];
@@ -537,7 +537,7 @@ void printVarData(int ncid, int varID)
 
 		long long avgVal = 0;
 
-		for (int i = 0; i < valuecount; ++i)
+		for (unsigned i = 0; i < valuecount; ++i)
 		{
 			if (isfillval && vals[i] == fillval) continue;
 			if (vals[i] < minVal) minVal = vals[i];
@@ -565,7 +565,7 @@ void printVarData(int ncid, int varID)
 
 		long long avgVal = 0;
 
-		for (int i = 0; i < valuecount; ++i)
+		for (unsigned i = 0; i < valuecount; ++i)
 		{
 			if (isfillval && vals[i] == fillval) continue;
 			if (vals[i] < minVal) minVal = vals[i];
