@@ -367,7 +367,7 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 	{
 	case NC_CHAR:
 	{
-		char* val = (char*)malloc(len + 1);
+		char* val = (char*)malloc((len + 1) * sizeof(char));
 		status = nc_get_att(ncid, varID, attribName, val);
 		ERR(status);
 		val[len] = '\0';
@@ -382,6 +382,7 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 		ERR(status);
 		for (int i = 0; i < len; ++i)
 			printf("%f ", val[i]);
+		free(val);
 		break;
 	}
 	case NC_DOUBLE:
@@ -391,6 +392,7 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 		ERR(status);
 		for (int i = 0; i < len; ++i)
 			printf("%f ", val[i]);
+		free(val);
 		break;
 	}
 	case NC_INT:
@@ -400,6 +402,7 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 		ERR(status);
 		for (int i = 0; i < len; ++i)
 			printf("%d ", val[i]);
+		free(val);
 		break;
 	}
 	case NC_SHORT:
@@ -409,6 +412,7 @@ void printAttribValue(int ncid, int varID, char* attribName, nc_type type, size_
 		ERR(status);
 		for (int i = 0; i < len; ++i)
 			printf("%hi ", val[i]);
+		free(val);
 		break;
 	}
 	default:
@@ -420,12 +424,10 @@ void printVarData(int ncid, int varID)
 {
 	char varName[NC_MAX_NAME];
 	nc_type varType;
-	int nDims, dimIDs[NC_MAX_VAR_DIMS], *dimLens, nAtts;
+	int nDims, dimIDs[NC_MAX_VAR_DIMS], dimLens[NC_MAX_VAR_DIMS], nAtts;
 	int status = nc_inq_var(ncid, varID, varName, &varType, &nDims, dimIDs, &nAtts);
 	ERR(status);
-
-	dimLens = (int*)malloc(nDims * sizeof(int));
-
+	
 	unsigned valuecount = 1;
 
 	for (int i = 0; i < nDims; ++i)
@@ -492,6 +494,8 @@ void printVarData(int ncid, int varID)
 
 		printf("Raw Min: %f\nRaw Max: %f\n  Range: %f\nAverage: %f\n", minVal, maxVal, maxVal - minVal, avgVal / (float)valuecount);
 
+		free(vals);
+
 		break;
 	}
 	case NC_DOUBLE:
@@ -519,6 +523,8 @@ void printVarData(int ncid, int varID)
 		}
 
 		printf("Raw Min: %f\nRaw Max: %f\n  Range: %f\nAverage: %f\n", minVal, maxVal, maxVal - minVal, avgVal / (double)valuecount);
+
+		free(vals);
 
 		break;
 	}
@@ -548,6 +554,8 @@ void printVarData(int ncid, int varID)
 
 		printf("Raw Min: %d\nRaw Max: %d\n  Range: %d\nAverage: %f\n", minVal, maxVal, maxVal - minVal, (float)avgVal / (float)valuecount);
 
+		free(vals);
+
 		break;
 	}
 	case NC_SHORT:
@@ -575,6 +583,8 @@ void printVarData(int ncid, int varID)
 		}
 
 		printf("Raw Min: %hi\nRaw Max: %hi\n  Range: %hi\nAverage: %f\n", minVal, maxVal, maxVal - minVal, (float)avgVal / (float)valuecount);
+
+		free(vals);
 
 		break;
 	}
